@@ -73,3 +73,17 @@ ${htmlCode.value}
     console.error(err);
   }
 }
+function shareProject() {
+  const project = {
+    html: htmlCode.value,
+    css: cssCode.value,
+    js: jsCode.value
+  };
+
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(project))));
+  const url = `${location.origin}${location.pathname}?project=${encoded}`;
+
+  navigator.clipboard.writeText(url);
+
+  alert("Share link copied ✅");
+}
