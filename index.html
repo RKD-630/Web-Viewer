@@ -1,0 +1,273 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My Project</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My Project</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+<title>Advanced Code Previewer</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #1e1e1e;
+  color: #fff;
+}
+
+/* Header */
+header {
+  padding: 10px;
+  text-align: center;
+  background: #111;
+}
+
+/* Controls */
+.controls {
+  padding: 10px;
+  background: #111;
+  display: flex;
+  gap: 10px;
+}
+
+/* Layout */
+.main {
+  display: flex;
+  height: calc(100vh - 100px);
+}
+
+/* Left editor panel */
+.editor-panel {
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Resizer */
+.resizer {
+  width: 5px;
+  cursor: col-resize;
+  background: #444;
+}
+
+/* Preview */
+.preview-panel {
+  flex: 1;
+}
+
+iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: #fff;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  background: #222;
+}
+
+.tab {
+  padding: 10px;
+  cursor: pointer;
+}
+
+.tab.active {
+  background: #007acc;
+}
+
+/* Editor */
+textarea {
+  flex: 1;
+  background: #252526;
+  color: white;
+  border: none;
+  padding: 10px;
+  font-family: monospace;
+  display: none;
+}
+
+textarea.active {
+  display: block;
+}
+
+button {
+  padding: 6px 10px;
+  background: #007acc;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<header>🔥 Advanced Code Previewer</header>
+
+<div class="controls">
+  <input type="file" id="fileInput" multiple>
+  <button onclick="openPreview()">New</button>
+  <button onclick="saveToFolder()">Save As</button>
+  <button onclick="downloadProject()">Download</button>  
+</div>//
+
+<div class="main">
+
+  <!-- Editor -->
+  <div class="editor-panel" id="editorPanel">
+
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('html')">HTML</div>
+      <div class="tab" onclick="switchTab('css')">CSS</div>
+      <div class="tab" onclick="switchTab('js')">JS</div>
+    </div>
+
+    <textarea id="htmlCode" class="active"><h1>Hello World</h1></textarea>
+    <textarea id="cssCode">h1 { color:red; }</textarea>
+    <textarea id="jsCode">console.log("Hello");</textarea>
+
+  </div>
+
+  <!-- Resizer -->
+  <div class="resizer" id="resizer"> </div>
+
+  <!-- Preview -->
+  <div class="preview-panel">
+    <iframe id="preview"></iframe>
+  </div>
+
+</div>
+
+<script>
+const htmlCode = document.getElementById("htmlCode");
+const cssCode = document.getElementById("cssCode");
+const jsCode = document.getElementById("jsCode");
+const preview = document.getElementById("preview");
+
+/* 🔥 Live Preview */
+function updatePreview() {
+  const code = `
+    <html>
+    <head><style>${cssCode.value}</style></head>
+    <body>
+    ${htmlCode.value}
+    <script>${jsCode.value}<\/script>
+    </body>
+    </html>
+  `;
+
+  const doc = preview.contentDocument;
+  doc.open();
+  doc.write(code);
+  doc.close();
+}
+
+[htmlCode, cssCode, jsCode].forEach(el =>
+  el.addEventListener("input", updatePreview)
+);
+
+updatePreview();
+
+/* 📑 Tabs */
+function switchTab(tab) {
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  event.target.classList.add("active");
+
+  htmlCode.classList.remove("active");
+  cssCode.classList.remove("active");
+  jsCode.classList.remove("active");
+
+  if (tab === "html") htmlCode.classList.add("active");
+  if (tab === "css") cssCode.classList.add("active");
+  if (tab === "js") jsCode.classList.add("active");
+}
+
+/* 🖱️ Resizable Panels */
+const resizer = document.getElementById("resizer");
+const editorPanel = document.getElementById("editorPanel");
+
+resizer.addEventListener("mousedown", function(e) {
+  document.addEventListener("mousemove", resize);
+  document.addEventListener("mouseup", stopResize);
+});
+
+function resize(e) {
+  let newWidth = e.clientX;
+  editorPanel.style.width = newWidth + "px";
+}
+
+function stopResize() {
+  document.removeEventListener("mousemove", resize);
+}
+
+/* 📂 File Upload */
+document.getElementById("fileInput").addEventListener("change", function(e) {
+  for (let file of e.target.files) {
+    const reader = new FileReader();
+
+    reader.onload = function(ev) {
+      if (file.name.endsWith(".html")) htmlCode.value = ev.target.result;
+      if (file.name.endsWith(".css")) cssCode.value = ev.target.result;
+      if (file.name.endsWith(".js")) jsCode.value = ev.target.result;
+      updatePreview();
+    };
+
+    reader.readAsText(file);
+  }
+});
+
+/* 🌐 New Tab */
+function openPreview() {
+  const newWindow = window.open();
+
+  const code = `
+    <html>
+    <head><style>${cssCode.value}</style></head>
+    <body>
+      ${htmlCode.value}
+      <script>${jsCode.value}<\/script>
+    </body>
+    </html>
+  `;
+
+  newWindow.document.write(code);
+}
+
+/* 💾 Download */
+function downloadFile(name, content) {
+  const blob = new Blob([content]);
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+}
+</script>
+
+</body>
+</html>
+
+
+<script src="script.js"></script>
+</body>
+</html>
+  
+<script src="script.js"></script>
+</body>
+</html>
+  
