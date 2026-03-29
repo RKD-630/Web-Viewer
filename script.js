@@ -157,42 +157,79 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ==========================================
-    // Resizer Splitter Logic
+    // Resizer Splitter Logic & Zoom Logic
     // ==========================================
+    let currentZoom = 14;
+    function applyZoom() {
+        document.querySelectorAll('.CodeMirror').forEach(cm => {
+            cm.style.fontSize = `${currentZoom}px`;
+        });
+        Object.values(editors).forEach(editor => editor.refresh());
+    }
+
+    document.getElementById('btn-zoom-in')?.addEventListener('click', () => {
+        if(currentZoom < 30) { currentZoom += 2; applyZoom(); }
+    });
+    document.getElementById('btn-zoom-out')?.addEventListener('click', () => {
+        if(currentZoom > 8) { currentZoom -= 2; applyZoom(); }
+    });
+
     const resizer = document.getElementById('resizer');
     const editorPane = document.querySelector('.editor-pane');
     let isResizing = false;
 
-    resizer.addEventListener('mousedown', (e) => {
+    function startResize(e) {
         isResizing = true;
-        document.body.style.cursor = 'col-resize';
+        document.body.style.cursor = window.innerWidth <= 768 ? 'row-resize' : 'col-resize';
         resizer.classList.add('dragging');
-        
-        // Add pseudo-element/iframe overlay block so mouse doesn't get lost in iframe
         livePreviewFrame.style.pointerEvents = 'none';
-    });
+    }
 
-    document.addEventListener('mousemove', (e) => {
+    function doResize(clientX, clientY) {
         if (!isResizing) return;
-        const width = e.clientX;
-        const minWidth = 250;
-        const maxWidth = window.innerWidth - 250;
-        if (width > minWidth && width < maxWidth) {
-            editorPane.style.width = `${width}px`;
+        if (window.innerWidth <= 768) {
+            const headerHeight = document.querySelector('.app-header').offsetHeight;
+            const height = clientY - headerHeight;
+            const minHeight = 100;
+            const maxHeight = window.innerHeight - headerHeight - 100;
+            if (height > minHeight && height < maxHeight) {
+                editorPane.style.height = `${height}px`;
+                editorPane.style.width = '100%';
+            }
+        } else {
+            const width = clientX;
+            const minWidth = 250;
+            const maxWidth = window.innerWidth - 250;
+            if (width > minWidth && width < maxWidth) {
+                editorPane.style.width = `${width}px`;
+                editorPane.style.height = '100%';
+            }
         }
-    });
+    }
 
-    document.addEventListener('mouseup', () => {
+    function endResize() {
         if (isResizing) {
             isResizing = false;
             document.body.style.cursor = 'default';
             resizer.classList.remove('dragging');
             livePreviewFrame.style.pointerEvents = 'all';
-            
-            // Refresh editors due to resize
             Object.values(editors).forEach(editor => editor.refresh());
         }
-    });
+    }
+
+    resizer.addEventListener('mousedown', startResize);
+    resizer.addEventListener('touchstart', startResize, {passive: true});
+
+    document.addEventListener('mousemove', (e) => doResize(e.clientX, e.clientY));
+    document.addEventListener('touchmove', (e) => {
+        if (isResizing) {
+            doResize(e.touches[0].clientX, e.touches[0].clientY);
+            if (e.cancelable) e.preventDefault();
+        }
+    }, {passive: false});
+
+    document.addEventListener('mouseup', endResize);
+    document.addEventListener('touchend', endResize);
 
     // ==========================================
     // Download ZIP Logic (JSZip)

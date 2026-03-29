@@ -184,7 +184,6 @@ body {
     flex-direction: row;
     overflow: hidden;
     position: relative;
-    height: calc(100vh - 60px);
 }
 
 /* Editor Pane */
@@ -450,3 +449,46 @@ body {
 
 /* Utility */
 .hidden { display: none !important; }
+
+/* =========================================
+   Mobile Responsiveness
+========================================= */
+@media (max-width: 768px) {
+    .workspace {
+        flex-direction: column;
+    }
+    .editor-pane {
+        width: 100% !important;
+        height: 50%;
+        min-height: 200px;
+    }
+    .preview-pane {
+        width: 100% !important;
+        flex: 1;
+    }
+    .resizer {
+        width: 100%;
+        height: 12px;
+        flex-direction: row;
+        cursor: row-resize;
+        border-top: 1px solid var(--border-color);
+        border-bottom: 1px solid var(--border-color);
+    }
+    .resizer-handle {
+        width: 30px;
+        height: 4px;
+        background-color: var(--text-secondary);
+        border-radius: 2px;
+    }
+    .app-header {
+        height: auto;
+        flex-direction: column;
+        padding: 12px 20px;
+        gap: 12px;
+    }
+    .actions {
+        flex-wrap: wrap;
+        justify-content: center;
+        width: 100%;
+    }
+}
