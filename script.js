@@ -56,7 +56,27 @@ document.addEventListener('DOMContentLoaded', () => {
             const css = editors.css.getValue();
             const js = editors.js.getValue();
 
-            const combinedHTML = `
+            let combinedHTML = '';
+            const isFullHtml = /<html/i.test(html) || /<!doctype/i.test(html);
+
+            if (isFullHtml) {
+                combinedHTML = html;
+                if (css.trim()) {
+                    if (/<\/head>/i.test(combinedHTML)) {
+                        combinedHTML = combinedHTML.replace(/<\/head>/i, `<style>${css}</style>\n</head>`);
+                    } else {
+                        combinedHTML = `<style>${css}</style>\n` + combinedHTML;
+                    }
+                }
+                if (js.trim()) {
+                    if (/<\/body>/i.test(combinedHTML)) {
+                        combinedHTML = combinedHTML.replace(/<\/body>/i, `<script>try{${js}}catch(e){console.error(e)}<\/script>\n</body>`);
+                    } else {
+                        combinedHTML += `\n<script>try{${js}}catch(e){console.error(e)}<\/script>`;
+                    }
+                }
+            } else {
+                combinedHTML = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -80,6 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
     <\/script>
 </body>
 </html>`;
+            }
 
             // Using srcdoc is reliable and bypasses same-origin blocks
             livePreviewFrame.srcdoc = combinedHTML;
@@ -245,25 +266,56 @@ document.addEventListener('DOMContentLoaded', () => {
         const css = editors.css.getValue();
         const js = editors.js.getValue();
 
-        // Create standard HTML file template linking internal files
-        const indexFile = `<!DOCTYPE html>
+        let indexFile = '';
+        const isFullHtml = /<html/i.test(html) || /<!doctype/i.test(html);
+
+        if (isFullHtml) {
+            indexFile = html;
+            if (css.trim()) {
+                if (/<\/head>/i.test(indexFile) && !/style\.css/i.test(indexFile)) {
+                    indexFile = indexFile.replace(/<\/head>/i, '    <link rel="stylesheet" href="style.css">\n</head>');
+                } else if (!/<head>/i.test(indexFile) && !/style\.css/i.test(indexFile)) {
+                    indexFile = `<link rel="stylesheet" href="style.css">\n` + indexFile;
+                }
+            }
+            if (js.trim()) {
+                if (/<\/body>/i.test(indexFile) && !/script\.js/i.test(indexFile)) {
+                    indexFile = indexFile.replace(/<\/body>/i, '    <script src="script.js"><\/script>\n</body>');
+                } else if (!/<body>/i.test(indexFile) && !/script\.js/i.test(indexFile)) {
+                    indexFile += `\n<script src="script.js"><\/script>`;
+                }
+            }
+        } else {
+            let cssLink = css.trim() ? '\n    <link rel="stylesheet" href="style.css">' : '';
+            let jsScript = js.trim() ? '\n    <script src="script.js"><\/script>' : '';
+
+            indexFile = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Exported Project</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Exported Project</title>${cssLink}
 </head>
 <body>
-${html}
-    <script src="script.js"><\/script>
+${html}${jsScript}
 </body>
 </html>`;
+        }
 
         const folder = zip.folder('webproject');
-        folder.file('index.html', indexFile);
-        folder.file('style.css', css);
-        folder.file('script.js', js);
+        
+        // Add HTML file if there's any content or structure
+        if (html.trim() || css.trim() || js.trim()) {
+            folder.file('index.html', indexFile);
+        }
+        
+        // Only add files if they have code
+        if (css.trim()) {
+            folder.file('style.css', css);
+        }
+        if (js.trim()) {
+            folder.file('script.js', js);
+        }
         
         // Add JSON if user typed something
         const jsonVal = editors.json.getValue();
@@ -289,7 +341,27 @@ ${html}
         const css = editors.css.getValue();
         const js = editors.js.getValue();
 
-        const combinedHTML = `
+        let combinedHTML = '';
+        const isFullHtml = /<html/i.test(html) || /<!doctype/i.test(html);
+
+        if (isFullHtml) {
+            combinedHTML = html;
+            if (css.trim()) {
+                if (/<\/head>/i.test(combinedHTML)) {
+                    combinedHTML = combinedHTML.replace(/<\/head>/i, `<style>${css}</style>\n</head>`);
+                } else {
+                    combinedHTML = `<style>${css}</style>\n` + combinedHTML;
+                }
+            }
+            if (js.trim()) {
+                if (/<\/body>/i.test(combinedHTML)) {
+                    combinedHTML = combinedHTML.replace(/<\/body>/i, `<script>${js}<\/script>\n</body>`);
+                } else {
+                    combinedHTML += `\n<script>${js}<\/script>`;
+                }
+            }
+        } else {
+            combinedHTML = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -303,6 +375,7 @@ ${html}
     <script>${js}<\/script>
 </body>
 </html>`;
+        }
 
         const blob = new Blob([combinedHTML], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
@@ -314,11 +387,16 @@ ${html}
     // Clear Code
     // ==========================================
     document.getElementById('btn-clear').addEventListener('click', () => {
-        if(confirm("Are you sure you want to clear all editors?")) {
+        if(confirm("Are you sure you want to start a new file?")) {
+            editors.html.setValue('<h1>Hello, Code Previewer!</h1>\n<p>Edit this code to see live changes.</p>');
+            editors.css.setValue('body {\n  background: #f0f4f8;\n  color: #333;\n  font-family: sans-serif;\n  text-align: center;\n}\n\nh1 {\n  color: #0366d6;\n}');
+            editors.js.setValue('console.log("Ready to build something awesome?");');
+            editors.json.setValue('');
+            
             Object.values(editors).forEach(editor => {
-                editor.setValue('');
                 editor.clearHistory();
             });
+            updateLivePreview();
         }
     });
 
@@ -349,6 +427,11 @@ ${html}
     const fileInput = document.getElementById('file-upload');
     fileInput.addEventListener('change', (e) => {
         if(e.target.files.length) {
+            // Clear existing data so it opens a new file for editing
+            Object.values(editors).forEach(editor => {
+                editor.setValue('');
+                editor.clearHistory();
+            });
             handleFiles(e.target.files);
             e.target.value = ''; // Reset input
         }
@@ -382,6 +465,11 @@ ${html}
         dragOverlay.classList.remove('active');
         
         if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+            // Clear existing data so it opens a new file for editing
+            Object.values(editors).forEach(editor => {
+                editor.setValue('');
+                editor.clearHistory();
+            });
             handleFiles(e.dataTransfer.files);
         }
     });
