@@ -1,298 +1,137 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <title>My Project</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-
-<!DOCTYPE html>
-<html>
-<head>
-  <title>My Project</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-
-<!DOCTYPE html>
-<html>
-<head>
-  <title>My Project</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-
-<!DOCTYPE html>
-<html>
-<head>
-  <title>My Project</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
-<title>Advanced Code Previewer</title>
-
-<style>
-body {
-  margin: 0;
-  font-family: Arial;
-  background: #1e1e1e;
-  color: #fff;
-}
-
-/* Header */
-header {
-  padding: 10px;
-  text-align: center;
-  background: #111;
-}
-
-/* Controls */
-.controls {
-  padding: 10px;
-  background: #111;
-  display: flex;
-  gap: 10px;
-}
-
-/* Layout */
-.main {
-  display: flex;
-  height: calc(100vh - 100px);
-}
-
-/* Left editor panel */
-.editor-panel {
-  width: 50%;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Resizer */
-.resizer {
-  width: 5px;
-  cursor: col-resize;
-  background: #444;
-}
-
-/* Preview */
-.preview-panel {
-  flex: 1;
-}
-
-iframe {
-  width: 100%;
-  height: 100%;
-  border: none;
-  background: #fff;
-}
-
-/* Tabs */
-.tabs {
-  display: flex;
-  background: #222;
-}
-
-.tab {
-  padding: 10px;
-  cursor: pointer;
-}
-
-.tab.active {
-  background: #007acc;
-}
-
-/* Editor */
-textarea {
-  flex: 1;
-  background: #252526;
-  color: white;
-  border: none;
-  padding: 10px;
-  font-family: monospace;
-  display: none;
-}
-
-textarea.active {
-  display: block;
-}
-
-button {
-  padding: 6px 10px;
-  background: #007acc;
-  border: none;
-  color: white;
-  cursor: pointer;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Previewer | Build & Preview</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- CodeMirror CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/neo.min.css">
+    
+    <!-- Local CSS -->
+    <link rel="stylesheet" href="style.css">
 </head>
-
-<body>
-
-<header><h1>🔥 Web Project Creator</h1></header>
-
-<div class="controls">
-  <input type="file" id="fileInput" multiple>
-  <button onclick="openPreview()"> ▶ Run</button>
-  <button onclick="saveToFolder()"> 💾 Save As</button>
-  <button onclick="downloadProject()"> 🡻 Download</button>
-  <button onclick="shareProject()"> ⤿ Share</button>  
-</div>
-
-<div class="main">
-
-  <!-- Editor -->
-  <div class="editor-panel" id="editorPanel">
-
-    <div class="tabs">
-      <div class="tab active" onclick="switchTab('html')">HTML</div>
-      <div class="tab" onclick="switchTab('css')">CSS</div>
-      <div class="tab" onclick="switchTab('js')">JS</div>
+<body class="dark-mode" id="drop-zone">
+    <!-- overlay for drag and drop -->
+    <div id="drag-overlay" class="drag-overlay">
+        <div class="drag-message">
+            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            <h2>Drop files here to load</h2>
+            <p>Supports .html, .css, .js, .json</p>
+        </div>
     </div>
 
-    <textarea id="htmlCode" class="active"><h1>Hello World</h1></textarea>
-    <textarea id="cssCode">h1 { color:red; }</textarea>
-    <textarea id="jsCode">console.log("Hello");</textarea>
+    <!-- Main Application Header -->
+    <header class="app-header">
+        <div class="logo">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+            <h1>Code Previewer</h1>
+        </div>
+        <div class="actions">
+            <label for="file-upload" class="btn btn-secondary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                Upload Files
+            </label>
+            <input type="file" id="file-upload" multiple accept=".html,.css,.js,.json" style="display: none;">
+            
+            <button id="btn-clear" class="btn btn-danger">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                Clear
+            </button>
+            <button id="btn-download" class="btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Download ZIP
+            </button>
+            <button id="btn-preview-tab" class="btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                Preview in New Tab
+            </button>
 
-  </div>
+            <button id="btn-theme" class="btn btn-icon" title="Toggle Theme">
+                <svg id="theme-icon-sun" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+            </button>
+        </div>
+    </header>
 
-  <!-- Resizer -->
-  <div class="resizer" id="resizer"> </div>
+    <!-- Main Workspace -->
+    <main class="workspace">
+        <!-- Editor View -->
+        <section class="editor-pane">
+            <div class="tabs">
+                <div class="tab-list">
+                    <button class="tab active" data-target="html">
+                        <span class="file-icon html-icon"></span> index.html
+                    </button>
+                    <button class="tab" data-target="css">
+                        <span class="file-icon css-icon"></span> style.css
+                    </button>
+                    <button class="tab" data-target="js">
+                        <span class="file-icon js-icon"></span> script.js
+                    </button>
+                    <button class="tab" data-target="json">
+                        <span class="file-icon json-icon"></span> data.json
+                    </button>
+                </div>
+                <div class="tab-actions">
+                    <button id="btn-format-json" class="btn btn-sm btn-secondary hidden">Format JSON</button>
+                </div>
+            </div>
+            
+            <div class="editor-wrap">
+                <div id="html-editor" class="editor-container active"></div>
+                <div id="css-editor" class="editor-container"></div>
+                <div id="js-editor" class="editor-container"></div>
+                <div id="json-editor" class="editor-container"></div>
+            </div>
+        </section>
 
-  <!-- Preview -->
-  <div class="preview-panel">
-    <iframe id="preview"></iframe>
-  </div>
+        <!-- Resizer Handle -->
+        <div class="resizer" id="resizer">
+            <div class="resizer-handle"></div>
+        </div>
 
-</div>
+        <!-- Live Preview View -->
+        <section class="preview-pane">
+            <div class="preview-header">
+                <div class="preview-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                    Live Preview
+                </div>
+                <div id="json-status" class="json-status hidden"></div>
+            </div>
+            
+            <div class="preview-content">
+                <iframe id="live-preview" sandbox="allow-scripts allow-modals"></iframe>
+                <div id="json-preview" class="hidden">
+                    <pre id="json-output"></pre>
+                </div>
+            </div>
+        </section>
+    </main>
 
-<script>
-const htmlCode = document.getElementById("htmlCode");
-const cssCode = document.getElementById("cssCode");
-const jsCode = document.getElementById("jsCode");
-const preview = document.getElementById("preview");
+    <!-- JavaScript Libraries -->
+    <!-- CodeMirror Core and Modes -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/htmlmixed/htmlmixed.min.js"></script>
+    
+    <!-- CodeMirror Addons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closetag.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closebrackets.min.js"></script>
+    
+    <!-- JSZip for Downloading Files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
-/* 🔥 Live Preview */
-function updatePreview() {
-  const code = `
-    <html>
-    <head><style>${cssCode.value}</style></head>
-    <body>
-    ${htmlCode.value}
-    <script>${jsCode.value}<\/script>
-    </body>
-    </html>
-  `;
-
-  const doc = preview.contentDocument;
-  doc.open();
-  doc.write(code);
-  doc.close();
-}
-
-[htmlCode, cssCode, jsCode].forEach(el =>
-  el.addEventListener("input", updatePreview)
-);
-
-updatePreview();
-
-/* 📑 Tabs */
-function switchTab(tab) {
-  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-  event.target.classList.add("active");
-
-  htmlCode.classList.remove("active");
-  cssCode.classList.remove("active");
-  jsCode.classList.remove("active");
-
-  if (tab === "html") htmlCode.classList.add("active");
-  if (tab === "css") cssCode.classList.add("active");
-  if (tab === "js") jsCode.classList.add("active");
-}
-
-/* 🖱️ Resizable Panels */
-const resizer = document.getElementById("resizer");
-const editorPanel = document.getElementById("editorPanel");
-
-resizer.addEventListener("mousedown", function(e) {
-  document.addEventListener("mousemove", resize);
-  document.addEventListener("mouseup", stopResize);
-});
-
-function resize(e) {
-  let newWidth = e.clientX;
-  editorPanel.style.width = newWidth + "px";
-}
-
-function stopResize() {
-  document.removeEventListener("mousemove", resize);
-}
-
-/* 📂 File Upload */
-document.getElementById("fileInput").addEventListener("change", function(e) {
-  for (let file of e.target.files) {
-    const reader = new FileReader();
-
-    reader.onload = function(ev) {
-      if (file.name.endsWith(".html")) htmlCode.value = ev.target.result;
-      if (file.name.endsWith(".css")) cssCode.value = ev.target.result;
-      if (file.name.endsWith(".js")) jsCode.value = ev.target.result;
-      updatePreview();
-    };
-
-    reader.readAsText(file);
-  }
-});
-
-/* 🌐 New Tab */
-function openPreview() {
-  const newWindow = window.open();
-
-  const code = `
-    <html>
-    <head><style>${cssCode.value}</style></head>
-    <body>
-      ${htmlCode.value}
-      <script>${jsCode.value}<\/script>
-    </body>
-    </html>
-  `;
-
-  newWindow.document.write(code);
-}
-
-/* 💾 Download */
-function downloadFile(name, content) {
-  const blob = new Blob([content]);
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = name;
-  a.click();
-}
-</script>
-
+    <!-- Local Script -->
+    <script src="script.js"></script>
 </body>
 </html>
-
-
-<script src="script.js"></script>
-</body>
-</html>
-  
-<script src="script.js"></script>
-</body>
-</html>
-  
-
-<script src="script.js"></script>
-</body>
-</html>
-  
-<script src="script.js"></script>
-</body>
-</html>
-  
