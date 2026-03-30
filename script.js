@@ -231,13 +231,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    let lastIsMobile = window.innerWidth <= 768;
     window.addEventListener('resize', () => {
-        if (window.innerWidth > 768) {
-            previewPane.style.height = 'auto';
-            editorPane.style.height = '100%';
-        } else {
-            editorPane.style.width = '100%';
-            editorPane.style.height = 'auto';
+        const isMobile = window.innerWidth <= 768;
+        if (isMobile !== lastIsMobile) {
+            previewPane.style.height = '';
+            previewPane.style.width = '';
+            editorPane.style.height = '';
+            editorPane.style.width = '';
+            lastIsMobile = isMobile;
         }
     });
 
