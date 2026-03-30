@@ -100,6 +100,7 @@ body {
     letter-spacing: -0.02em;
     background: linear-gradient(90deg, var(--accent-color), var(--text-primary));
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -291,6 +292,51 @@ body {
     background: var(--bg-panel) !important;
 }
 
+/* CodeMirror Dialog Styles */
+.CodeMirror-dialog {
+    background: var(--bg-panel);
+    color: var(--text-primary);
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border-color);
+    font-family: inherit;
+    font-size: 0.85rem;
+}
+
+.CodeMirror-dialog input {
+    background: var(--secondary-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 4px 8px;
+    border-radius: 4px;
+    outline: none;
+    font-family: inherit;
+}
+
+.CodeMirror-dialog input:focus {
+    border-color: var(--accent-color);
+}
+
+.CodeMirror-dialog button {
+    background: var(--secondary-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    margin-left: 4px;
+}
+
+.CodeMirror-dialog button:hover {
+    background: var(--border-color);
+}
+
+.tab-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
 /* =========================================
    Resizer Handle
 ========================================= */
@@ -457,14 +503,12 @@ body {
     .workspace {
         flex-direction: column;
     }
-    .editor-pane {
+    .preview-pane {
         width: 100% !important;
         height: 50%;
         min-height: 200px;
-    }
-    .preview-pane {
-        width: 100% !important;
-        flex: 1;
+        order: 1;
+        flex: none;
     }
     .resizer {
         width: 100%;
@@ -473,6 +517,13 @@ body {
         cursor: row-resize;
         border-top: 1px solid var(--border-color);
         border-bottom: 1px solid var(--border-color);
+        order: 2;
+    }
+    .editor-pane {
+        width: 100% !important;
+        flex: 1;
+        height: auto;
+        order: 3;
     }
     .resizer-handle {
         width: 30px;

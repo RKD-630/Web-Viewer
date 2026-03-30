@@ -197,6 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const resizer = document.getElementById('resizer');
     const editorPane = document.querySelector('.editor-pane');
+    const previewPane = document.querySelector('.preview-pane');
     let isResizing = false;
 
     function startResize(e) {
@@ -214,7 +215,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const minHeight = 100;
             const maxHeight = window.innerHeight - headerHeight - 100;
             if (height > minHeight && height < maxHeight) {
-                editorPane.style.height = `${height}px`;
+                previewPane.style.height = `${height}px`;
+                editorPane.style.height = 'auto';
                 editorPane.style.width = '100%';
             }
         } else {
@@ -223,10 +225,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const maxWidth = window.innerWidth - 250;
             if (width > minWidth && width < maxWidth) {
                 editorPane.style.width = `${width}px`;
+                previewPane.style.height = 'auto';
                 editorPane.style.height = '100%';
             }
         }
     }
+
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 768) {
+            previewPane.style.height = 'auto';
+            editorPane.style.height = '100%';
+        } else {
+            editorPane.style.width = '100%';
+            editorPane.style.height = 'auto';
+        }
+    });
 
     function endResize() {
         if (isResizing) {
@@ -251,6 +264,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.addEventListener('mouseup', endResize);
     document.addEventListener('touchend', endResize);
+
+    // ==========================================
+    // Editor Actions (Undo, Redo, Find)
+    // ==========================================
+    function getActiveEditor() {
+        const activeTab = document.querySelector('.tab.active').dataset.target;
+        return editors[activeTab];
+    }
+
+    document.getElementById('btn-undo').addEventListener('click', () => {
+        getActiveEditor().execCommand('undo');
+    });
+
+    document.getElementById('btn-redo').addEventListener('click', () => {
+        getActiveEditor().execCommand('redo');
+    });
+
+    document.getElementById('btn-find').addEventListener('click', () => {
+        getActiveEditor().execCommand('find');
+    });
 
     // ==========================================
     // Download ZIP Logic (JSZip)
