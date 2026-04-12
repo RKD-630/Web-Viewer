@@ -3,80 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web Editor Pro</title>
+    <title>Code Previewer | Build & Preview</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- CodeMirror CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/neo.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/dialog/dialog.min.css">
+    
+    <!-- Local CSS -->
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
-<body>
-    <header class="navbar">
-        <div class="logo">✨ Web Editor Pro</div>
-        <div class="toolbar">
-            <button id="btn-new" class="btn">New </button>
-            <label for="file-import" class="btn">Import Files</label>
-            <input type="file" id="file-import" multiple accept=".html,.css,.js" style="display: none;">
-            <button id="btn-export" class="btn">Export Single HTML</button>
-            <button id="btn-export-zip" class="btn btn-primary" style="background:#238636; border-color:#238636;">Export ZIP</button>
-            <button id="btn-inspect" class="btn">Inspect Element</button>
-            <button id="btn-run" class="btn btn-primary">Run</button>
+<body class="dark-mode" id="drop-zone">
+    <!-- overlay for drag and drop -->
+    <div id="drag-overlay" class="drag-overlay">
+        <div class="drag-message">
+            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            <h2>Drop files here to load</h2>
+            <p>Supports .html, .css, .js, .json</p>
+        </div>
+    </div>
+
+    <!-- Main Application Header -->
+    <header class="app-header">
+        <div class="actions">
+            <label for="file-upload" class="btn btn-secondary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            </label>
+            <input type="file" id="file-upload" multiple accept=".html,.css,.js,.json" style="display: none;">
+            
+            <button id="btn-clear" class="btn btn-danger">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+            </button>
+            <button id="btn-download" class="btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            </button>
+            <button id="btn-preview-tab" class="btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+            </button>
+
+            <button id="btn-zoom-out" class="btn btn-icon" title="Zoom Out (Code)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+            </button>
+            <button id="btn-zoom-in" class="btn btn-icon" title="Zoom In (Code)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>
+            </button>
+
+            <button id="btn-theme" class="btn btn-icon" title="Toggle Theme">
+                <svg id="theme-icon-sun" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+            </button>
         </div>
     </header>
+
+    <!-- Main Workspace -->
     <main class="workspace">
-        <div class="editor-pane">
+        <!-- Editor View -->
+        <section class="editor-pane">
             <div class="tabs">
-                <button class="tab active" data-target="html-editor">HTML</button>
-                <button class="tab" data-target="css-editor">CSS</button>
-                <button class="tab" data-target="js-editor">JavaScript</button>
+                <div class="tab-list">
+                    <button class="tab active" data-target="html">
+                        <span class="file-icon html-icon"></span> HTML
+                    </button>
+                    <button class="tab" data-target="css">
+                        <span class="file-icon css-icon"></span> CSS
+                    </button>
+                    <button class="tab" data-target="js">
+                        <span class="file-icon js-icon"></span> JS
+                    </button>
+                    <button class="tab" data-target="json">
+                        <span class="file-icon json-icon"></span> JSON
+                    </button>
+                
+                <div class="tab-actions">
+                    <button id="btn-undo" class="btn btn-icon" title="Undo">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"></path><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path></svg>
+                    </button>
+                    <button id="btn-redo" class="btn btn-icon" title="Redo">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"></path><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"></path></svg>
+                    </button>
+                    <button id="btn-find" class="btn btn-icon" title="Find/Search">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></div>
+                    </button>
+                    <button id="btn-format-json" class="btn btn-sm btn-secondary hidden">Format JSON</button>
+                </div>
             </div>
-            <textarea id="html-editor" class="code-area" spellcheck="false">&lt;div class="container"&gt;
-  &lt;h1&gt;Welcome to Web Editor Pro&lt;/h1&gt;
-  &lt;p&gt;Edit the code to see changes immediately.&lt;/p&gt;
-  &lt;button onclick="sayHello()"&gt;Click Me&lt;/button&gt;
-&lt;/div&gt;</textarea>
-            <textarea id="css-editor" class="code-area" spellcheck="false" style="display: none;">body { 
-    font-family: 'Inter', sans-serif; 
-    text-align: center; 
-    margin-top: 50px; 
-    background: #0d1117;
-    color: #e6edf3;
-}
-h1 { color: #58a6ff; font-size: 3rem; margin-bottom: 10px; }
-p { color: #8b949e; font-size: 1.2rem; }
-button { padding: 10px 20px; background: #238636; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; margin-top: 20px; transition: 0.2s; }
-button:hover { background: #2ea043; }
-.container { padding: 40px; border: 1px solid #30363d; border-radius: 10px; background: #161b22; display: inline-block; box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
-</textarea>
-            <textarea id="js-editor" class="code-area" spellcheck="false" style="display: none;">console.log("Welcome to the integrated console!");
-function sayHello() {
-    console.info("Button clicked! Greetings from the iframe.");
-    alert("Hello World! Editor is working properly.");
-}</textarea>
+            
+            <div class="editor-wrap">
+                <div id="html-editor" class="editor-container active"></div>
+                <div id="css-editor" class="editor-container"></div>
+                <div id="js-editor" class="editor-container"></div>
+                <div id="json-editor" class="editor-container"></div>
+            </div>
+        </section>
+
+        <!-- Resizer Handle -->
+        <div class="resizer" id="resizer">
+            <div class="resizer-handle"></div>
         </div>
-        <div class="preview-pane">
-            <div class="pane-header">
-                <span>Live Preview</span>
-                <div class="device-controls">
-                    <button class="device-btn active" data-device="desktop" title="Desktop View">💻</button>
-                    <button class="device-btn" data-device="tablet" title="Tablet View">💊</button>
-                    <button class="device-btn" data-device="mobile" title="Mobile View">📱</button>
+
+        <!-- Live Preview View -->
+        <section class="preview-pane">
+            
+                    
+                <div id="json-status" class="json-status hidden"></div>
+            </div>
+            
+            <div class="preview-content">
+                <iframe id="live-preview" sandbox="allow-scripts allow-modals"></iframe>
+                <div id="json-preview" class="hidden">
+                    <pre id="json-output"></pre>
                 </div>
             </div>
-            <div class="iframe-container" id="iframe-container">
-                <iframe id="preview-frame"></iframe>
-            </div>
-            <div class="console-pane">
-                <div class="pane-header console-header">
-                    <span>Console window</span>
-                    <button id="btn-clear-console" class="btn-clear">Clear</button>
-                </div>
-                <div id="console-output" class="console-output"></div>
-                <div class="console-input-wrapper">
-                    <span class="console-prompt">&gt;</span>
-                    <input type="text" id="console-input" class="console-input" placeholder="Type JavaScript and press Enter..." spellcheck="false" autocomplete="off">
-                </div>
-            </div>
-        </div>
+        </section>
     </main>
+
+    <!-- JavaScript Libraries -->
+    <!-- CodeMirror Core and Modes -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/htmlmixed/htmlmixed.min.js"></script>
+    
+    <!-- CodeMirror Addons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closetag.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/edit/closebrackets.min.js"></script>
+    
+    <!-- CodeMirror Search Addons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/dialog/dialog.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/search/searchcursor.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/search/search.min.js"></script>
+    
+    <!-- JSZip for Downloading Files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <!-- Local Script -->
     <script src="script.js"></script>
 </body>
 </html>
