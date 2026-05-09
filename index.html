@@ -12,10 +12,13 @@
     <header class="navbar">
         <div class="logo">🌐 Webitor Pro™</div>
         <div class="toolbar">
+            <button id="id-btn-edit" class="btn" style="border-color: #ffca28; color: #ffca28;">Edit</button>
+            <button id="btn-save-html" class="btn" style="border-color: #2ea043; color: #2ea043;">Save HTML</button>
             <button id="btn-mobile-template" class="btn" style="border-color: #58a6ff; color: #58a6ff;">Mobile App</button>
             <button id="btn-new" class="btn">New </button>
             <label for="file-import" class="btn">Import</label>
             <input type="file" id="file-import" multiple accept=".html,.css,.js" style="display: none;">
+            <input type="file" id="image-import" accept="image/*" style="display: none;">
             <button id="btn-preview" class="btn">Preview Page</button>
             <button id="btn-export-zip" class="btn btn-primary" style="background:#238636; border-color:#238636;">Save ZIP</button>
             <button id="btn-inspect" class="btn">Inspect Element</button>
@@ -26,9 +29,27 @@
     <main class="workspace">
         <div class="editor-pane">
             <div class="tabs">
-                <button class="tab active" data-target="html-editor">HTML</button>
-                <button class="tab" data-target="css-editor">CSS</button>
-                <button class="tab" data-target="js-editor">JavaScript</button>
+                <div class="tab-group">
+                    <button class="tab active" data-target="html-editor">HTML</button>
+                    <button class="tab" data-target="css-editor">CSS</button>
+                    <button class="tab" data-target="js-editor">JavaScript</button>
+                    <button class="tab" data-target="json-editor">JSON</button>
+                </div>
+                <div class="editor-tools">
+                    <div class="search-box">
+                        <input type="text" id="editor-search" placeholder="Find text..." spellcheck="false">
+                        <button id="btn-find" class="tool-btn" title="Find next">🔍</button>
+                        <span id="search-results">0/0</span>
+                    </div>
+                    <div class="tool-group">
+                        <button id="btn-undo" class="tool-btn" title="Undo (Ctrl+Z)">⟲</button>
+                        <button id="btn-redo" class="tool-btn" title="Redo (Ctrl+Y)">⟳</button>
+                    </div>
+                    <div class="tool-group">
+                        <button id="btn-zoom-out" class="tool-btn" title="Zoom Out">-</button>
+                        <button id="btn-zoom-in" class="tool-btn" title="Zoom In">+</button>
+                    </div>
+                </div>
             </div>
             <textarea id="html-editor" class="code-area" spellcheck="false">&lt;div class="container"&gt;
   &lt;h1&gt;Welcome to Web Editor Pro&lt;/h1&gt;
@@ -52,6 +73,20 @@ button:hover { background: #2ea043; }
 function sayHello() {
     console.info("Button clicked! Greetings from the iframe.");
     alert("Hello World! Editor is working properly.");
+}</textarea>
+            <textarea id="json-editor" class="code-area" spellcheck="false" style="display: none;">{
+  "project": "Webitor Pro",
+  "version": "1.2.0",
+  "features": [
+    "HTML/CSS/JS Editor",
+    "Live Preview",
+    "JSON Viewer",
+    "Console Integration"
+  ],
+  "settings": {
+    "theme": "dark",
+    "fontSize": 15
+  }
 }</textarea>
         </div>
         <div class="preview-pane">
@@ -165,6 +200,153 @@ function sayHello() {
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div id="property-panel" class="property-panel">
+        <div class="panel-header">
+            <span id="target-element-name">Element Properties</span>
+            <button class="close-panel">&times;</button>
+        </div>
+        <div class="panel-tabs">
+            <button class="panel-tab active" data-tab="text-props">Text</button>
+            <button class="panel-tab" data-tab="image-props">Image</button>
+            <button class="panel-tab" data-tab="advanced-props">Layout</button>
+        </div>
+        <div class="panel-body">
+            <div id="text-props" class="tab-content active">
+                <div class="prop-row">
+                    <label>Edit Text Content</label>
+                    <textarea id="prop-text-content" class="prop-input" rows="3" placeholder="Enter text here..."></textarea>
+                </div>
+                <div id="prop-link-wrap" class="prop-row" style="display:none">
+                    <label>Link URL (href)</label>
+                    <input type="text" id="prop-link-url" placeholder="https://example.com" class="prop-input">
+                    <label class="checkbox-label" style="margin-top:5px"><input type="checkbox" id="prop-link-target"> Open in New Tab</label>
+                </div>
+                <div class="prop-row">
+                    <label>Font Family</label>
+                    <select id="prop-font-family">
+                        <option value="Inter, sans-serif">Inter</option>
+                        <option value="'Roboto', sans-serif">Roboto</option>
+                        <option value="'Outfit', sans-serif">Outfit</option>
+                        <option value="'Courier New', monospace">Monospace</option>
+                        <option value="serif">Serif</option>
+                        <option value="cursive">Cursive</option>
+                    </select>
+                </div>
+                <div class="prop-row">
+                    <label>Size</label>
+                    <input type="range" id="prop-font-size" min="8" max="100" value="16">
+                    <span id="font-size-val">16px</span>
+                </div>
+                <div class="prop-row">
+                    <label>Color</label>
+                    <div class="color-type-toggle">
+                        <button class="type-btn active" data-type="solid">Solid</button>
+                        <button class="type-btn" data-type="gradient">Gradient</button>
+                    </div>
+                </div>
+                <div id="solid-color-wrap" class="prop-row">
+                    <div class="color-input-group">
+                        <input type="color" id="prop-text-color">
+                        <input type="text" id="prop-text-color-code" placeholder="#000000" class="color-code-input">
+                    </div>
+                </div>
+                <div id="gradient-color-wrap" class="prop-row" style="display:none">
+                    <input type="color" id="prop-grad-1" value="#58a6ff">
+                    <input type="color" id="prop-grad-2" value="#2ea043">
+                    <select id="prop-grad-dir">
+                        <option value="to right">Right</option>
+                        <option value="to bottom">Bottom</option>
+                        <option value="45deg">45deg</option>
+                    </select>
+                </div>
+                <div class="prop-row">
+                    <label>Background</label>
+                    <div class="color-type-toggle bg-type">
+                        <button class="type-btn active" data-type="solid">Solid</button>
+                        <button class="type-btn" data-type="gradient">Gradient</button>
+                    </div>
+                </div>
+                <div id="bg-solid-wrap" class="prop-row">
+                    <div class="color-input-group">
+                        <input type="color" id="prop-bg-color" value="#ffffff">
+                        <input type="text" id="prop-bg-color-code" placeholder="#ffffff" class="color-code-input">
+                    </div>
+                    <label class="checkbox-label"><input type="checkbox" id="prop-no-bg"> No Background</label>
+                </div>
+                <div id="bg-gradient-wrap" class="prop-row" style="display:none">
+                    <input type="color" id="prop-bg-grad-1" value="#58a6ff">
+                    <input type="color" id="prop-bg-grad-2" value="#2ea043">
+                    <select id="prop-bg-grad-dir">
+                        <option value="to right">Right</option>
+                        <option value="to bottom">Bottom</option>
+                    </select>
+                </div>
+                <div class="prop-row">
+                    <label>Text Shadow</label>
+                    <input type="color" id="prop-shadow-color" value="#000000">
+                    <input type="range" id="prop-shadow-blur" min="0" max="20" value="0">
+                </div>
+                <div class="prop-row style-buttons">
+                    <button id="prop-bold" title="Bold"><b>B</b></button>
+                    <button id="prop-italic" title="Italic"><i>I</i></button>
+                    <button id="prop-underline" title="Underline"><u>U</u></button>
+                </div>
+            </div>
+            <div id="image-props" class="tab-content">
+                <div class="prop-row">
+                    <button id="btn-replace-image" class="btn btn-primary" style="width:100%">Import Image</button>
+                </div>
+                <div class="prop-row">
+                    <label>Contrast</label>
+                    <input type="range" id="prop-contrast" min="0" max="200" value="100">
+                </div>
+                <div class="prop-row">
+                    <label>Brightness</label>
+                    <input type="range" id="prop-brightness" min="0" max="200" value="100">
+                </div>
+                <div class="prop-row">
+                    <label>Hue</label>
+                    <input type="range" id="prop-hue" min="0" max="360" value="0">
+                </div>
+                <div class="prop-row">
+                    <label>Blur (Sharpness)</label>
+                    <input type="range" id="prop-blur" min="0" max="10" value="0">
+                </div>
+                <div class="prop-row">
+                    <label>Frames</label>
+                    <div class="frame-grid">
+                        <div class="frame-item active" data-frame="none">None</div>
+                        <div class="frame-item" data-frame="frame-rounded">Rounded</div>
+                        <div class="frame-item" data-frame="frame-circle">Circle</div>
+                        <div class="frame-item" data-frame="frame-border">Border</div>
+                        <div class="frame-item" data-frame="frame-shadow">Shadow</div>
+                        <div class="frame-item" data-frame="frame-art">Artistic</div>
+                        <div class="frame-item" data-frame="frame-polaroid">Polaroid</div>
+                        <div class="frame-item" data-frame="frame-neon">Neon</div>
+                    </div>
+                </div>
+            </div>
+            </div>
+            <div id="advanced-props" class="tab-content">
+                <div class="prop-row">
+                    <label>Opacity</label>
+                    <input type="range" id="prop-opacity" min="0" max="100" value="100">
+                </div>
+                <div class="prop-row">
+                    <label>Border Radius</label>
+                    <input type="range" id="prop-radius" min="0" max="50" value="0">
+                </div>
+                <div class="prop-row">
+                    <label>Margin</label>
+                    <input type="range" id="prop-margin" min="0" max="100" value="0">
+                </div>
+            </div>
+        </div>
+        <div class="panel-footer" style="display:none">
+            <button id="btn-apply-props" class="btn btn-primary" style="width:100%">Apply Changes</button>
         </div>
     </div>
 

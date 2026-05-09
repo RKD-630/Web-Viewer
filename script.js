@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const htmlEditor = document.getElementById('html-editor');
     const cssEditor = document.getElementById('css-editor');
     const jsEditor = document.getElementById('js-editor');
+    const jsonEditor = document.getElementById('json-editor');
     const previewFrame = document.getElementById('preview-frame');
     const consoleOutput = document.getElementById('console-output');
     
@@ -17,6 +18,9 @@ document.addEventListener('DOMContentLoaded', () => {
             tab.classList.add('active');
             const targetId = tab.getAttribute('data-target');
             document.getElementById(targetId).style.display = 'block';
+            
+            // Refresh preview for JSON view
+            updatePreview();
         });
     });
 
@@ -30,11 +34,16 @@ document.addEventListener('DOMContentLoaded', () => {
     htmlEditor.addEventListener('input', triggerUpdate);
     cssEditor.addEventListener('input', triggerUpdate);
     jsEditor.addEventListener('input', triggerUpdate);
+    jsonEditor.addEventListener('input', triggerUpdate);
 
     function updatePreview() {
         const htmlCode = htmlEditor.value;
         const cssCode = cssEditor.value;
         const jsCode = jsEditor.value;
+        const jsonCode = jsonEditor.value;
+        
+        const activeTab = document.querySelector('.tab.active');
+        const isJsonTab = activeTab && activeTab.getAttribute('data-target') === 'json-editor';
         
         const iframeDoc = previewFrame.contentDocument || previewFrame.contentWindow.document;
         
@@ -81,7 +90,52 @@ document.addEventListener('DOMContentLoaded', () => {
 
         iframeDoc.open();
         
-        let finalCode = `<!DOCTYPE html>
+        if (isJsonTab) {
+            let jsonHtml = "";
+            try {
+                const jsonObj = JSON.parse(jsonCode);
+                const prettyJson = JSON.stringify(jsonObj, null, 2);
+                jsonHtml = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <style>
+                            body { background: #0d1117; color: #58a6ff; font-family: 'Courier New', monospace; padding: 20px; font-size: 14px; line-height: 1.5; }
+                            pre { white-space: pre-wrap; word-wrap: break-word; }
+                            .string { color: #79c0ff; }
+                            .number { color: #d2a8ff; }
+                            .boolean { color: #ffa657; }
+                            .null { color: #ffa657; }
+                            .key { color: #7ee787; }
+                        </style>
+                    </head>
+                    <body>
+                        <pre>${syntaxHighlight(prettyJson)}</pre>
+                    </body>
+                    </html>
+                `;
+            } catch (e) {
+                jsonHtml = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <style>
+                            body { background: #0d1117; color: #ff7b72; font-family: sans-serif; padding: 20px; }
+                            .error-box { border: 1px solid #ff7b72; padding: 15px; border-radius: 6px; background: rgba(255, 123, 114, 0.1); }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="error-box">
+                            <h3>❌ Invalid JSON</h3>
+                            <p>${e.message}</p>
+                        </div>
+                    </body>
+                    </html>
+                `;
+            }
+            iframeDoc.write(jsonHtml);
+        } else {
+            let finalCode = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -93,16 +147,47 @@ document.addEventListener('DOMContentLoaded', () => {
     ${processedHtml}
     <script>${jsCode}</script>
 `;
-        
-        // Add inspector script if active
-        if (isInspectMode) {
-             finalCode += getInspectorScript();
+            
+            if (isInspectMode) {
+                 finalCode += getInspectorScript();
+            }
+            
+            if (isVisualEditMode) {
+                finalCode += getVisualEditorScript();
+            }
+            
+            finalCode += "</body></html>";
+            iframeDoc.write(finalCode);
         }
         
-        finalCode += "</body></html>";
-        
-        iframeDoc.write(finalCode);
         iframeDoc.close();
+        
+        // After update, if in visual edit mode, we might need to re-apply some states
+        if (isVisualEditMode) {
+            document.body.classList.add('visual-editor-active');
+        } else {
+            document.body.classList.remove('visual-editor-active');
+        }
+    }
+
+    function syntaxHighlight(json) {
+        if (!json) return "";
+        json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+            var cls = 'number';
+            if (/^"/.test(match)) {
+                if (/:$/.test(match)) {
+                    cls = 'key';
+                } else {
+                    cls = 'string';
+                }
+            } else if (/true|false/.test(match)) {
+                cls = 'boolean';
+            } else if (/null/.test(match)) {
+                cls = 'null';
+            }
+            return '<span class="' + cls + '">' + match + '</span>';
+        });
     }
 
     // Message receiver
@@ -134,6 +219,11 @@ document.addEventListener('DOMContentLoaded', () => {
             htmlEditor.scrollTop = (linesBefore - 5) * lineHeight;
             
             appendConsole(`Selected element at offset ${offset} in HTML.`, "info");
+        } else if (event.data.type === 'visual-editor-select') {
+            handleVisualElementSelect(event.data);
+        } else if (event.data.type === 'visual-editor-change') {
+            // Sync back to editor
+            syncVisualToCode();
         }
     });
 
@@ -300,6 +390,44 @@ console.info("Mobile App template with Theme Toggle loaded.");`;
         }
     });
 
+    // Save HTML button
+    document.getElementById('btn-save-html').addEventListener('click', () => {
+        if (isVisualEditMode) syncVisualToCode();
+        const htmlCode = htmlEditor.value;
+        const cssCode = cssEditor.value;
+        const jsCode = jsEditor.value;
+        
+        const finalExport = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Webitor Pro Export</title>
+  <style>
+${cssCode}
+  </style>
+</head>
+<body>
+${htmlCode}
+  <script>
+${jsCode}
+  </script>
+</body>
+</html>`;
+        
+        const blob = new Blob([finalExport], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "index.html";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        appendConsole("HTML file saved as index.html", "info");
+    });
+
     // New button
     document.getElementById('btn-new').addEventListener('click', () => {
         if(confirm("Start a new project? Unsaved changes will be lost.")) {
@@ -352,6 +480,7 @@ ${jsCode}
 
     // Export ZIP Button
     document.getElementById('btn-export-zip').addEventListener('click', () => {
+        if (isVisualEditMode) syncVisualToCode();
         if (typeof JSZip === 'undefined') {
             alert("JSZip library has not loaded properly. Please check your internet connection.");
             return;
@@ -695,7 +824,552 @@ ${htmlCode}
         });
     });
 
-    [htmlEditor, cssEditor, jsEditor].forEach(initColorPreview);
+    [htmlEditor, cssEditor, jsEditor, jsonEditor].forEach(initColorPreview);
+    
+    // --- New Editor Tools Logic ---
+    
+    // Search Logic
+    const searchInput = document.getElementById('editor-search');
+    const btnFind = document.getElementById('btn-find');
+    const searchResults = document.getElementById('search-results');
+    let lastSearch = "";
+    let searchIndex = -1;
+    let searchMatches = [];
+
+    function performSearch() {
+        const query = searchInput.value;
+        const activeArea = document.querySelector('.code-area[style*="display: block"]') || htmlEditor;
+        const text = activeArea.value;
+
+        if (!query) {
+            searchResults.textContent = "0/0";
+            return;
+        }
+
+        if (query !== lastSearch) {
+            lastSearch = query;
+            searchMatches = [];
+            let pos = text.indexOf(query);
+            while (pos !== -1) {
+                searchMatches.push(pos);
+                pos = text.indexOf(query, pos + 1);
+            }
+            searchIndex = -1;
+        }
+
+        if (searchMatches.length > 0) {
+            searchIndex = (searchIndex + 1) % searchMatches.length;
+            const pos = searchMatches[searchIndex];
+            activeArea.focus();
+            activeArea.setSelectionRange(pos, pos + query.length);
+            
+            // Scroll into view
+            const textBefore = text.substring(0, pos);
+            const linesBefore = textBefore.split('\n').length;
+            const lineHeight = parseFloat(window.getComputedStyle(activeArea).lineHeight);
+            activeArea.scrollTop = (linesBefore - 5) * lineHeight;
+
+            searchResults.textContent = `${searchIndex + 1}/${searchMatches.length}`;
+        } else {
+            searchResults.textContent = "0/0";
+            appendConsole(`No matches found for "${query}"`, "info");
+        }
+    }
+
+    btnFind.addEventListener('click', performSearch);
+    searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            performSearch();
+        }
+    });
+
+    // Reset search when text changes or tab changes
+    const resetSearch = () => {
+        lastSearch = "";
+        searchMatches = [];
+        searchIndex = -1;
+        searchResults.textContent = "0/0";
+    };
+
+    [htmlEditor, cssEditor, jsEditor, jsonEditor].forEach(area => area.addEventListener('input', resetSearch));
+    tabs.forEach(tab => tab.addEventListener('click', resetSearch));
+
+    // Undo/Redo Logic
+    const btnUndo = document.getElementById('btn-undo');
+    const btnRedo = document.getElementById('btn-redo');
+
+    btnUndo.addEventListener('click', () => {
+        const activeArea = document.querySelector('.code-area[style*="display: block"]') || htmlEditor;
+        activeArea.focus();
+        document.execCommand('undo', false, null);
+    });
+
+    btnRedo.addEventListener('click', () => {
+        const activeArea = document.querySelector('.code-area[style*="display: block"]') || htmlEditor;
+        activeArea.focus();
+        document.execCommand('redo', false, null);
+    });
+
+    // Zoom Logic
+    const btnZoomIn = document.getElementById('btn-zoom-in');
+    const btnZoomOut = document.getElementById('btn-zoom-out');
+    let currentZoom = 15;
+
+    function updateZoom() {
+        codeAreas.forEach(area => {
+            area.style.fontSize = `${currentZoom}px`;
+        });
+        appendConsole(`Editor font size: ${currentZoom}px`, "info");
+    }
+
+    btnZoomIn.addEventListener('click', () => {
+        if (currentZoom < 40) {
+            currentZoom += 2;
+            updateZoom();
+        }
+    });
+
+    btnZoomOut.addEventListener('click', () => {
+        if (currentZoom > 8) {
+            currentZoom -= 2;
+            updateZoom();
+        }
+    });
+
+    // --- Visual Editor Implementation ---
+    let isVisualEditMode = false;
+    let selectedElementInfo = null;
+    const btnEdit = document.getElementById('id-btn-edit');
+    const propertyPanel = document.getElementById('property-panel');
+    const imageImport = document.getElementById('image-import');
+
+    btnEdit.addEventListener('click', () => {
+        isVisualEditMode = !isVisualEditMode;
+        btnEdit.textContent = isVisualEditMode ? 'Finish Editing' : 'Edit';
+        btnEdit.style.backgroundColor = isVisualEditMode ? '#ffca28' : '';
+        btnEdit.style.color = isVisualEditMode ? '#000' : '#ffca28';
+        
+        const consolePane = document.getElementById('console-pane');
+        const editorPane = document.querySelector('.editor-pane');
+        const resizerV = document.getElementById('console-resizer');
+
+        if (isVisualEditMode) {
+            appendConsole("Visual Edit Mode enabled. Click elements in preview to edit.", "warn");
+            // Expand preview pane for full page feel
+            editorPane.style.display = 'none';
+            consolePane.style.display = 'none';
+            resizerV.style.display = 'none';
+        } else {
+            appendConsole("Visual Edit Mode disabled.", "info");
+            editorPane.style.display = 'flex';
+            consolePane.style.display = 'flex';
+            resizerV.style.display = 'flex';
+            propertyPanel.classList.remove('active');
+            syncVisualToCode();
+        }
+        updatePreview();
+    });
+
+    // Property Panel Tab Switching
+    const panelTabs = document.querySelectorAll('.panel-tab');
+    const panelContents = document.querySelectorAll('.tab-content');
+    panelTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            panelTabs.forEach(t => t.classList.remove('active'));
+            panelContents.forEach(c => c.classList.remove('active'));
+            tab.classList.add('active');
+            document.getElementById(tab.getAttribute('data-tab')).classList.add('active');
+        });
+    });
+
+    document.querySelector('.close-panel').addEventListener('click', () => {
+        propertyPanel.classList.remove('active');
+    });
+
+    // Color Type Toggles
+    document.querySelectorAll('.color-type-toggle').forEach(toggle => {
+        toggle.querySelectorAll('.type-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                toggle.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                const type = btn.getAttribute('data-type');
+                const isBg = toggle.classList.contains('bg-type');
+                
+                if (isBg) {
+                    document.getElementById('bg-solid-wrap').style.display = type === 'solid' ? 'block' : 'none';
+                    document.getElementById('bg-gradient-wrap').style.display = type === 'gradient' ? 'block' : 'none';
+                } else {
+                    document.getElementById('solid-color-wrap').style.display = type === 'solid' ? 'block' : 'none';
+                    document.getElementById('gradient-color-wrap').style.display = type === 'gradient' ? 'block' : 'none';
+                }
+            });
+        });
+    });
+
+    function handleVisualElementSelect(data) {
+        selectedElementInfo = data;
+        propertyPanel.classList.add('active');
+        document.getElementById('target-element-name').textContent = `<${data.tagName.toLowerCase()}> Properties`;
+        
+        // Update inputs based on current styles
+        const styles = data.styles;
+        
+        // Text Content
+        document.getElementById('prop-text-content').value = data.textContent || '';
+        
+        // Link Content
+        if (data.tagName === 'A') {
+            document.getElementById('prop-link-wrap').style.display = 'block';
+            document.getElementById('prop-link-url').value = data.href || '';
+            document.getElementById('prop-link-target').checked = data.target === '_blank';
+        } else {
+            document.getElementById('prop-link-wrap').style.display = 'none';
+        }
+        
+        // Font
+        document.getElementById('prop-font-size').value = parseInt(styles.fontSize) || 16;
+        document.getElementById('font-size-val').textContent = styles.fontSize;
+        
+        // Detect if gradient or solid for text
+        const hasTextGradient = (styles.backgroundImage && styles.backgroundImage.includes('gradient')) && 
+                              (styles.backgroundClip.includes('text') || styles.webkitBackgroundClip.includes('text'));
+        
+        if (hasTextGradient) {
+            document.querySelector('.color-type-toggle:not(.bg-type) .type-btn[data-type="gradient"]').click();
+        } else {
+            document.querySelector('.color-type-toggle:not(.bg-type) .type-btn[data-type="solid"]').click();
+            const hex = rgbToHex(styles.color);
+            document.getElementById('prop-text-color').value = hex;
+            document.getElementById('prop-text-color-code').value = hex;
+        }
+
+        // Detect if gradient or solid for background
+        const noBg = styles.backgroundColor === 'rgba(0, 0, 0, 0)' || styles.backgroundColor === 'transparent';
+        document.getElementById('prop-no-bg').checked = noBg;
+
+        if (styles.backgroundImage && styles.backgroundImage.includes('gradient') && styles.backgroundClip !== 'text') {
+            document.querySelector('.bg-type .type-btn[data-type="gradient"]').click();
+        } else {
+            document.querySelector('.bg-type .type-btn[data-type="solid"]').click();
+            const hex = rgbToHex(styles.backgroundColor);
+            document.getElementById('prop-bg-color').value = hex;
+            document.getElementById('prop-bg-color-code').value = hex;
+        }
+
+        // Style buttons
+        document.getElementById('prop-bold').classList.toggle('active', styles.fontWeight === 'bold' || parseInt(styles.fontWeight) >= 600);
+        document.getElementById('prop-italic').classList.toggle('active', styles.fontStyle === 'italic');
+        document.getElementById('prop-underline').classList.toggle('active', styles.textDecoration.includes('underline'));
+
+        // Image props
+        if (data.tagName === 'IMG') {
+            panelTabs[1].click(); // Switch to Image tab
+        } else {
+            panelTabs[0].click(); // Switch to Text tab
+        }
+    }
+
+    function rgbToHex(rgb) {
+        if (!rgb || rgb === 'transparent') return '#ffffff';
+        if (rgb.startsWith('#')) return rgb;
+        const match = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+        if (!match) return '#ffffff';
+        function hex(x) {
+            return ("0" + parseInt(x).toString(16)).slice(-2);
+        }
+        return "#" + hex(match[1]) + hex(match[2]) + hex(match[3]);
+    }
+
+    // Apply Changes
+    document.getElementById('btn-apply-props').addEventListener('click', () => {
+        if (!selectedElementInfo) return;
+
+        const props = {
+            fontSize: document.getElementById('prop-font-size').value + 'px',
+            fontFamily: document.getElementById('prop-font-family').value,
+            fontWeight: document.getElementById('prop-bold').classList.contains('active') ? 'bold' : 'normal',
+            fontStyle: document.getElementById('prop-italic').classList.contains('active') ? 'italic' : 'normal',
+            textDecoration: document.getElementById('prop-underline').classList.contains('active') ? 'underline' : 'none',
+            opacity: document.getElementById('prop-opacity').value / 100,
+            borderRadius: document.getElementById('prop-radius').value + 'px',
+            margin: document.getElementById('prop-margin').value + 'px',
+        };
+
+        // Text Color & Gradient
+        const colorType = document.querySelector('.color-type-toggle:not(.bg-type) .type-btn.active').getAttribute('data-type');
+        let textGrad = 'none';
+        if (colorType === 'solid') {
+            props.color = document.getElementById('prop-text-color').value;
+            props.webkitTextFillColor = 'initial';
+        } else {
+            const g1 = document.getElementById('prop-grad-1').value;
+            const g2 = document.getElementById('prop-grad-2').value;
+            const dir = document.getElementById('prop-grad-dir').value;
+            textGrad = `linear-gradient(${dir}, ${g1}, ${g2})`;
+            props.webkitTextFillColor = 'transparent';
+            props.color = 'transparent';
+        }
+
+        // Background Color & Gradient
+        const bgType = document.querySelector('.bg-type .type-btn.active').getAttribute('data-type');
+        const noBg = document.getElementById('prop-no-bg').checked;
+        let bgGrad = 'none';
+
+        if (noBg) {
+            props.backgroundColor = 'transparent';
+        } else if (bgType === 'solid') {
+            props.backgroundColor = document.getElementById('prop-bg-color').value;
+        } else {
+            const g1 = document.getElementById('prop-bg-grad-1').value;
+            const g2 = document.getElementById('prop-bg-grad-2').value;
+            const dir = document.getElementById('prop-bg-grad-dir').value;
+            bgGrad = `linear-gradient(${dir}, ${g1}, ${g2})`;
+            props.backgroundColor = 'transparent';
+        }
+
+        // Combine Gradients & Handle Clipping
+        if (textGrad !== 'none') {
+            props.backgroundImage = textGrad;
+            if (bgGrad !== 'none') {
+                // If both exist, we can try stacking, but clipping will affect both.
+                // Usually better to prioritize text gradient if clip is active.
+                props.backgroundImage = `${textGrad}, ${bgGrad}`;
+            }
+            props.webkitBackgroundClip = 'text';
+            props.backgroundClip = 'text';
+            // Important: if text gradient is on, background-color might interfere 
+            // depending on browser. Usually transparent is best.
+        } else {
+            props.backgroundImage = bgGrad;
+            props.webkitBackgroundClip = 'border-box';
+            props.backgroundClip = 'border-box';
+        }
+
+        // Text Shadow
+        const shadowColor = document.getElementById('prop-shadow-color').value;
+        const shadowBlur = document.getElementById('prop-shadow-blur').value;
+        if (parseInt(shadowBlur) > 0) {
+            props.textShadow = `0 0 ${shadowBlur}px ${shadowColor}`;
+        } else {
+            props.textShadow = 'none';
+        }
+
+        // Filters (for images)
+        const contrast = document.getElementById('prop-contrast').value;
+        const brightness = document.getElementById('prop-brightness').value;
+        const hue = document.getElementById('prop-hue').value;
+        const blur = document.getElementById('prop-blur').value;
+        props.filter = `contrast(${contrast}%) brightness(${brightness}%) hue-rotate(${hue}deg) blur(${blur}px)`;
+
+        // Link Properties
+        let linkProps = null;
+        if (selectedElementInfo.tagName === 'A') {
+            linkProps = {
+                href: document.getElementById('prop-link-url').value,
+                target: document.getElementById('prop-link-target').checked ? '_blank' : '_self'
+            };
+        }
+
+        // Text Content
+        const textContent = document.getElementById('prop-text-content').value;
+
+        // Send to iframe
+        const activeFrame = document.querySelector('.frame-item.active');
+        previewFrame.contentWindow.postMessage({
+            type: 'visual-editor-apply',
+            id: selectedElementInfo.id,
+            props: props,
+            textContent: textContent,
+            linkProps: linkProps,
+            frameClass: activeFrame ? activeFrame.getAttribute('data-frame') : 'none'
+        }, '*');
+
+        appendConsole("Changes applied to element.", "info");
+    });
+
+    // Live Updates
+    const livePropInputs = [
+        'prop-font-size', 'prop-font-family', 'prop-text-color', 'prop-grad-1', 'prop-grad-2', 'prop-grad-dir',
+        'prop-bg-color', 'prop-bg-grad-1', 'prop-bg-grad-2', 'prop-bg-grad-dir',
+        'prop-shadow-color', 'prop-shadow-blur', 'prop-contrast', 'prop-brightness', 'prop-hue', 'prop-blur',
+        'prop-opacity', 'prop-radius', 'prop-margin', 'prop-no-bg', 'prop-text-color-code', 'prop-bg-color-code',
+        'prop-link-url', 'prop-link-target', 'prop-text-content'
+    ];
+
+    livePropInputs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('input', () => {
+                // Sync color picker with text input
+                if (id === 'prop-text-color') document.getElementById('prop-text-color-code').value = el.value.toUpperCase();
+                if (id === 'prop-text-color-code') {
+                    if (/^#[0-9A-F]{6}$/i.test(el.value)) document.getElementById('prop-text-color').value = el.value;
+                }
+                if (id === 'prop-bg-color') document.getElementById('prop-bg-color-code').value = el.value.toUpperCase();
+                if (id === 'prop-bg-color-code') {
+                    if (/^#[0-9A-F]{6}$/i.test(el.value)) document.getElementById('prop-bg-color').value = el.value;
+                }
+
+                document.getElementById('btn-apply-props').click();
+                if (id === 'prop-font-size') {
+                    document.getElementById('font-size-val').textContent = el.value + 'px';
+                }
+            });
+        }
+    });
+
+    // Style button toggles
+    ['prop-bold', 'prop-italic', 'prop-underline'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) {
+            btn.addEventListener('click', () => {
+                btn.classList.toggle('active');
+                document.getElementById('btn-apply-props').click();
+            });
+        }
+    });
+
+    // Frame selection
+    document.querySelectorAll('.frame-item').forEach(item => {
+        item.addEventListener('click', () => {
+            document.querySelectorAll('.frame-item').forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            document.getElementById('btn-apply-props').click();
+        });
+    });
+
+    // Image Replace
+    document.getElementById('btn-replace-image').addEventListener('click', () => {
+        imageImport.click();
+    });
+
+    imageImport.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            previewFrame.contentWindow.postMessage({
+                type: 'visual-editor-replace-image',
+                id: selectedElementInfo.id,
+                src: event.target.result
+            }, '*');
+        };
+        reader.readAsDataURL(file);
+    });
+
+    function syncVisualToCode() {
+        const iframeDoc = previewFrame.contentDocument || previewFrame.contentWindow.document;
+        // Clean up editor specific classes before syncing
+        const cleanBody = iframeDoc.body.cloneNode(true);
+        cleanBody.querySelectorAll('.editor-selected-element').forEach(el => el.classList.remove('editor-selected-element'));
+        cleanBody.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
+        
+        htmlEditor.value = cleanBody.innerHTML.trim();
+        triggerUpdate(); // This will refresh the internal state but keep the UI
+    }
+
+    function getVisualEditorScript() {
+        return `
+        <script>
+            (function() {
+                let selectedEl = null;
+                let elementCounter = 0;
+
+                // Assign IDs to all elements for reference if they don't have one
+                document.querySelectorAll('body *').forEach(el => {
+                    if (!el.id) el.id = 've-' + (++elementCounter);
+                });
+
+                document.body.addEventListener('mouseover', function(e) {
+                    if (e.target === document.body) return;
+                    e.target.style.outline = '1px dashed #ffca28';
+                });
+
+                document.body.addEventListener('mouseout', function(e) {
+                    if (e.target === document.body) return;
+                    if (e.target !== selectedEl) e.target.style.outline = '';
+                });
+
+                document.body.addEventListener('click', function(e) {
+                    if (e.target === document.body) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    if (selectedEl) {
+                        selectedEl.classList.remove('editor-selected-element');
+                        selectedEl.style.outline = '';
+                        selectedEl.removeAttribute('contenteditable');
+                    }
+
+                    selectedEl = e.target;
+                    selectedEl.classList.add('editor-selected-element');
+                    
+                    const computed = window.getComputedStyle(selectedEl);
+                    window.parent.postMessage({
+                        type: 'visual-editor-select',
+                        id: selectedEl.id,
+                        tagName: selectedEl.tagName,
+                        textContent: selectedEl.innerText,
+                        styles: {
+                            fontSize: computed.fontSize,
+                            color: computed.color,
+                            backgroundColor: computed.backgroundColor,
+                            fontFamily: computed.fontFamily,
+                            fontWeight: computed.fontWeight,
+                            fontStyle: computed.fontStyle,
+                            textDecoration: computed.textDecoration,
+                            backgroundImage: computed.backgroundImage,
+                            backgroundClip: computed.backgroundClip || '',
+                            webkitBackgroundClip: computed.webkitBackgroundClip || '',
+                            textShadow: computed.textShadow,
+                            href: selectedEl.href || '',
+                            target: selectedEl.target || ''
+                        }
+                    }, '*');
+                });
+
+                window.addEventListener('message', function(event) {
+                    if (event.data.type === 'visual-editor-apply') {
+                        const el = document.getElementById(event.data.id);
+                        if (!el) return;
+                        
+                        Object.assign(el.style, event.data.props);
+                        
+                        if (event.data.textContent !== undefined && !['IMG', 'VIDEO', 'IFRAME'].includes(el.tagName)) {
+                            el.innerText = event.data.textContent;
+                        }
+
+                        // Handle frame classes
+                        const frames = ['frame-rounded', 'frame-circle', 'frame-border', 'frame-shadow', 'frame-art'];
+                        frames.forEach(f => el.classList.remove(f));
+                        if (event.data.frameClass !== 'none') {
+                            el.classList.add(event.data.frameClass);
+                        }
+                        
+                        if (event.data.linkProps) {
+                            el.href = event.data.linkProps.href;
+                            el.target = event.data.linkProps.target;
+                        }
+                        
+                        window.parent.postMessage({ type: 'visual-editor-change' }, '*');
+                    } else if (event.data.type === 'visual-editor-replace-image') {
+                        const el = document.getElementById(event.data.id);
+                        if (el && el.tagName === 'IMG') {
+                            el.src = event.data.src;
+                            window.parent.postMessage({ type: 'visual-editor-change' }, '*');
+                        }
+                    }
+                });
+
+                // Monitor content changes
+                document.body.addEventListener('input', function(e) {
+                    window.parent.postMessage({ type: 'visual-editor-change' }, '*');
+                });
+            })();
+        </script>
+        `;
+    }
 
     // Initial render
     updatePreview();
