@@ -1,351 +1,88 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web Editor Pro</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-</head>
+<!DOCTYPE html><html lang="en"><head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mobile Preview &amp; Editor Pro</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css" />
+  
+<link rel="stylesheet" href="style.css" /></head>
 <body>
-    <header class="navbar">
-        <div class="logo">🌐 Webitor Pro™</div>
-        <div class="toolbar">
-        <button id="btn-new" class="btn">New </button>
-            <label for="file-import" class="btn">Import</label>
-            <input type="file" id="file-import" multiple accept=".html,.css,.js" style="display: none;">
-            <input type="file" id="image-import" accept="image/*" style="display: none;">
-            <button id="id-btn-edit" class="btn" style="border-color: #ffca28; color: #ffca28;">Edit</button>
-            <button id="btn-mobile-template" class="btn" style="border-color: #58a6ff; color: #58a6ff;">Mobile Support</button>
-            <button id="btn-preview" class="btn">Preview </button>
-            <button id="btn-save-html" class="btn" style="border-color: #2ea043; color: #2ea043;">Save HTML</button>
-            <button id="btn-export-zip" class="btn btn-primary" style="background:#238636; border-color:#238636;">Save ZIP</button>
-            <button id="btn-inspect" class="btn">Inspect </button>
-            <button id="btn-console-toggle" class="btn" style="border-color: #d2a8ff; color: #d2a8ff;">Console</button>
-            <div style="flex-basis: 100%; height: 0; margin: 0; padding: 0;"></div>
-            <button id="btn-run" class="btn btn-primary">Run</button>
-            <button id="btn-info" class="btn" title="Information">i</button>
-        </div>
-    </header>
-    <main class="workspace">
-        <div class="preview-pane" id="preview-pane">
-            <div class="pane-header">
-                <span>Live Preview</span>
-                <div class="device-controls">
-                    <button class="device-btn active" data-device="desktop" title="Desktop View">💻</button>
-                    <button class="device-btn" data-device="tablet" title="Tablet View">💊</button>
-                    <button class="device-btn" data-device="mobile" title="Mobile View">📱</button>
-                </div>
-            </div>
-            <div class="iframe-container" id="iframe-container">
-                <iframe id="preview-frame"></iframe>
-            </div>
-            <div class="resizer-v" id="console-resizer"></div>
-            <div class="console-pane" id="console-pane">
-                <div class="pane-header console-header">
-                    <span>Console window</span>
-                    <button id="btn-clear-console" class="btn-clear">Clear</button>
-                </div>
-                <div id="console-output" class="console-output"></div>
-                <div class="console-input-wrapper">
-                    <span class="console-prompt">&gt;</span>
-                    <input type="text" id="console-input" class="console-input" placeholder="Type JavaScript and press Enter..." spellcheck="false" autocomplete="off">
-                </div>
-            </div>
-        </div>
-        <div class="editor-pane">
-            <div class="tabs">
-                <div class="tab-group">
-                    <button class="tab active" data-target="html-editor">HTML</button>
-                    <button class="tab" data-target="css-editor">CSS</button>
-                    <button class="tab" data-target="js-editor">JavaScript</button>
-                    <button class="tab mobile-tab" data-target="preview-pane" style="display: none;">Live Preview</button>
-                    <button class="tab mobile-tab" data-target="console-pane" style="display: none;">Console</button>
-                    <button class="tab" data-target="json-editor" style="display: none;">JSON</button>
-                </div>
-                <div class="editor-tools">
-                    <div class="search-box">
-                        <input type="text" id="editor-search" placeholder="Find text..." spellcheck="false">
-                        <button id="btn-find" class="tool-btn" title="Find next">🔍</button>
-                        <span id="search-results">0/0</span>
-                    </div>
-                    <div class="tool-group">
-                        <button id="btn-undo" class="tool-btn" title="Undo (Ctrl+Z)">⟲</button>
-                        <button id="btn-redo" class="tool-btn" title="Redo (Ctrl+Y)">⟳</button>
-                    </div>
-                    <div class="tool-group">
-                        <button id="btn-zoom-out" class="tool-btn" title="Zoom Out">-</button>
-                        <button id="btn-zoom-in" class="tool-btn" title="Zoom In">+</button>
-                    </div>
-                </div>
-            </div>
-            <textarea id="html-editor" class="code-area" spellcheck="false">&lt;div class="container"&gt;
-  &lt;h1&gt;Welcome to Web Editor Pro&lt;/h1&gt;
-  &lt;p&gt;Edit the code to see changes immediately.&lt;/p&gt;
-  &lt;button onclick="sayHello()"&gt;Click Me&lt;/button&gt;
-&lt;/div&gt;</textarea>
-            <textarea id="css-editor" class="code-area" spellcheck="false" style="display: none;">body { 
-    font-family: 'Inter', sans-serif; 
-    text-align: center; 
-    margin-top: 50px; 
-    background: #0d1117;
-    color: #e6edf3;
-}
-h1 { color: #58a6ff; font-size: 3rem; margin-bottom: 10px; }
-p { color: #8b949e; font-size: 1.2rem; }
-button { padding: 10px 20px; background: #238636; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; margin-top: 20px; transition: 0.2s; }
-button:hover { background: #2ea043; }
-.container { padding: 40px; border: 1px solid #30363d; border-radius: 10px; background: #161b22; display: inline-block; box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
-</textarea>
-            <textarea id="js-editor" class="code-area" spellcheck="false" style="display: none;">console.log("Welcome to the integrated console!");
-function sayHello() {
-    console.info("Button clicked! Greetings from the iframe.");
-    alert("Hello World! Editor is working properly.");
-}</textarea>
-            <textarea id="json-editor" class="code-area" spellcheck="false" style="display: none;"></textarea>
-        </div>
-    </main>
-    <!-- Info Modal -->
-    <div id="info-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>📚 Information / जानकारी</h2>
-                <div class="lang-switch">
-                    <button class="lang-btn active" data-lang="en">English</button>
-                    <button class="lang-btn" data-lang="hi">हिन्दी</button>
-                </div>
-                <span class="close-modal">&times;</span>
-            </div>
-            <div class="modal-body">
-                <div id="lang-en" class="lang-content active">
-                    <h3>🔑 API Key Information</h3>
-                    <p>To use external services (Maps, Weather, etc.), you need an API Key. Store it in a variable in your JS tab. <strong>Never share your keys publicly!</strong></p>
-                    
-                    <h3>📱 How to Convert to APK (Android Studio)</h3>
-                    <ol>
-                        <li>Export your project as a <strong>ZIP</strong> from this editor.</li>
-                        <li>Open Android Studio and create a new <strong>"Empty Activity"</strong> project.</li>
-                        <li>Add a <strong>WebView</strong> to your <code>activity_main.xml</code>.</li>
-                        <li>Create an <code>assets</code> folder in <code>src/main/</code> and paste your project files there.</li>
-                        <li>In <code>MainActivity.java</code>, load the file: <br><code>webView.loadUrl("file:///android_asset/index.html");</code></li>
-                        <li>Go to <strong>Build > Build APK(s)</strong> to generate your mobile app!</li>
-                    </ol>
+  <header>
+    <h1>📱 Mobile Editor Pro</h1>
+    <input type="text" id="url-input" class="url-input" placeholder="Paste external URL (edit disabled due to CORS)" />
+    <button id="load-url" class="btn btn-secondary">Load URL</button>
+    <input type="file" id="file-import" multiple="" accept=".html,.htm,.css,.js" style="display:none" />
+    <button id="import-btn" class="btn btn-secondary">📂 Import Files</button>
+    <button id="export-btn" class="btn">📦 Export ZIP</button>
+  </header>
 
-                    <h3>💡 Pro Tips</h3>
-                    <ul>
-                        <li>Use <strong>Inspect Element</strong> to find exactly where your code is in the editor.</li>
-                        <li><strong>Hover over colors</strong> in the editor to see a quick preview bubble.</li>
-                        <li><strong>Resize the Console</strong> window by dragging the handle above it.</li>
-                        <li>Use the <strong>Mobile App</strong> button to start with a professional, responsive template.</li>
-                    </ul>
-
-                    <h3 style="margin-top:30px;">❓ FAQ (Frequently Asked Questions)</h3>
-                    <div class="faq-item">
-                        <p><strong>Q: How do I run my code?</strong><br>
-                        A: Code runs automatically as you type, or you can click the <strong>Run</strong> button manually.</p>
-                    </div>
-                    <div class="faq-item">
-                        <p><strong>Q: How do I add images?</strong><br>
-                        A: Use the <strong>Import</strong> button to upload images, or use online URLs in your <code>&lt;img&gt;</code> tags.</p>
-                    </div>
-                    <div class="faq-item">
-                        <p><strong>Q: Can I save my project?</strong><br>
-                        A: Yes! Use <strong>Save ZIP</strong> to download all your files for later use.</p>
-                    </div>
-                </div>
-                <div id="lang-hi" class="lang-content">
-                    <h3>🔑 API की (Key) जानकारी</h3>
-                    <p>बाहरी सेवाओं (Maps, Weather आदि) का उपयोग करने के लिए, आपको एक API की आवश्यकता होती है। इसे अपने JS टैब में एक वेरिएबल में रखें। <strong>अपनी की (Keys) को कभी भी सार्वजनिक रूप से साझा न करें!</strong></p>
-                    
-                    <h3>📱 APK में कैसे बदलें (Android Studio)</h3>
-                    <ol>
-                        <li>इस एडिटर से अपने प्रोजेक्ट को <strong>ZIP</strong> के रूप में डाउनलोड करें।</li>
-                        <li>Android Studio खोलें और एक नया <strong>"Empty Activity"</strong> प्रोजेक्ट बनाएं।</li>
-                        <li>अपने <code>activity_main.xml</code> में <strong>WebView</strong> जोड़ें।</li>
-                        <li><code>src/main/</code> में एक <code>assets</code> फ़ोल्डर बनाएं और अपनी प्रोजेक्ट फाइलें वहां पेस्ट करें।</li>
-                        <li><code>MainActivity.java</code> में, फाइल लोड करें: <br><code>webView.loadUrl("file:///android_asset/index.html");</code></li>
-                        <li>अपनी मोबाइल ऐप बनाने के लिए <strong>Build > Build APK(s)</strong> पर जाएं!</li>
-                    </ol>
-
-                    <h3>💡 प्रो टिप्स (Tips)</h3>
-                    <ul>
-                        <li>एडिटर में आपका कोड बिल्कुल कहां है, यह जानने के लिए <strong>Inspect Element</strong> का उपयोग करें।</li>
-                        <li>कलर कोड पर <strong>माउस ले जाकर</strong> उसका तुरंत प्रीव्यू देखें।</li>
-                        <li>कंसोल विंडो के ऊपर के <strong>हैंडल को खींचकर</strong> उसका आकार बदलें।</li>
-                        <li>प्रोफेशनल और रिस्पॉन्सिव टेम्पलेट के लिए <strong>Mobile App</strong> बटन का उपयोग करें।</li>
-                    </ul>
-
-                    <h3 style="margin-top:30px;">❓ अक्सर पूछे जाने वाले प्रश्न (FAQ)</h3>
-                    <div class="faq-item">
-                        <p><strong>प्रश्न: मैं अपना कोड कैसे रन करूं?</strong><br>
-                        उत्तर: टाइप करते समय कोड अपने आप रन होता है, या आप <strong>Run</strong> बटन पर क्लिक कर सकते हैं।</p>
-                    </div>
-                    <div class="faq-item">
-                        <p><strong>प्रश्न: मैं इमेज कैसे जोड़ूं?</strong><br>
-                        उत्तर: इमेज अपलोड करने के लिए <strong>Import</strong> बटन का उपयोग करें, या <code>&lt;img&gt;</code> टैग में ऑनलाइन URL का उपयोग करें।</p>
-                    </div>
-                    <div class="faq-item">
-                        <p><strong>प्रश्न: क्या मैं अपना प्रोजेक्ट सेव कर सकता हूं?</strong><br>
-                        उत्तर: हाँ! बाद में उपयोग के लिए अपनी सभी फाइलों को डाउनलोड करने के लिए <strong>Save ZIP</strong> का उपयोग करें।</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+  <div class="main">
+    <div class="code-panel">
+      <div class="tabs">
+        <div class="tab active" data-tab="html">index.html</div>
+        <div class="tab" data-tab="css">style.css</div>
+        <div class="tab" data-tab="js">script.js</div>
+      </div>
+      <div class="toolbar">
+        <button class="tool-btn" id="undo-btn">↩️ Undo</button>
+        <button class="tool-btn" id="redo-btn">↪️ Redo</button>
+        <button class="tool-btn" id="find-btn">🔍 Find</button>
+        <button class="tool-btn" id="inspect-btn">🖥️ Inspect</button>
+        <button class="tool-btn" id="console-btn">📟 Console</button>
+      </div>
+      <div id="search-bar" class="search-bar">
+        <input type="text" id="search-input" placeholder="Search..." />
+        <span id="search-count">0/0</span>
+        <button id="search-prev">⬆️</button>
+        <button id="search-next">⬇️</button>
+        <button id="search-close">✖</button>
+      </div>
+      <div class="editor-container">
+        <textarea id="html-editor"></textarea>
+        <textarea id="css-editor" style="display:none"></textarea>
+        <textarea id="js-editor" style="display:none"></textarea>
+      </div>
     </div>
 
-    <div id="property-panel" class="property-panel">
-        <div class="panel-header">
-            <span id="target-element-name">Element Properties</span>
-            <div class="panel-tools">
-                <button id="btn-prop-undo" class="tool-btn" title="Undo Action">⟲</button>
-                <button id="btn-prop-redo" class="tool-btn" title="Redo Action">⟳</button>
-            </div>
-            <button class="close-panel">&times;</button>
-        </div>
-        <div class="panel-tabs">
-            <button class="panel-tab active" data-tab="text-props">Text</button>
-            <button class="panel-tab" data-tab="image-props">Image</button>
-            <button class="panel-tab" data-tab="advanced-props">Layout</button>
-        </div>
-        <div class="panel-body">
-            <div id="text-props" class="tab-content active">
-                <div class="prop-row">
-                    <label>Edit Text Content</label>
-                    <textarea id="prop-text-content" class="prop-input" rows="3" placeholder="Enter text here..."></textarea>
-                </div>
-                <div id="prop-link-wrap" class="prop-row" style="display:none">
-                    <label>Link URL (href)</label>
-                    <input type="text" id="prop-link-url" placeholder="https://example.com" class="prop-input">
-                    <label class="checkbox-label" style="margin-top:5px"><input type="checkbox" id="prop-link-target"> Open in New Tab</label>
-                </div>
-                <div class="prop-row">
-                    <label>Font Family</label>
-                    <select id="prop-font-family">
-                        <option value="Inter, sans-serif">Inter</option>
-                        <option value="'Roboto', sans-serif">Roboto</option>
-                        <option value="'Outfit', sans-serif">Outfit</option>
-                        <option value="'Courier New', monospace">Monospace</option>
-                        <option value="serif">Serif</option>
-                        <option value="cursive">Cursive</option>
-                    </select>
-                </div>
-                <div class="prop-row">
-                    <label>Size</label>
-                    <input type="range" id="prop-font-size" min="8" max="100" value="16">
-                    <span id="font-size-val">16px</span>
-                </div>
-                <div class="prop-row">
-                    <label>Color</label>
-                    <div class="color-type-toggle">
-                        <button class="type-btn active" data-type="solid">Solid</button>
-                        <button class="type-btn" data-type="gradient">Gradient</button>
-                    </div>
-                </div>
-                <div id="solid-color-wrap" class="prop-row">
-                    <div class="color-input-group">
-                        <input type="color" id="prop-text-color">
-                        <input type="text" id="prop-text-color-code" placeholder="#000000" class="color-code-input">
-                    </div>
-                </div>
-                <div id="gradient-color-wrap" class="prop-row" style="display:none">
-                    <input type="color" id="prop-grad-1" value="#58a6ff">
-                    <input type="color" id="prop-grad-2" value="#2ea043">
-                    <select id="prop-grad-dir">
-                        <option value="to right">Right</option>
-                        <option value="to bottom">Bottom</option>
-                        <option value="45deg">45deg</option>
-                    </select>
-                </div>
-                <div class="prop-row">
-                    <label>Background</label>
-                    <div class="color-type-toggle bg-type">
-                        <button class="type-btn active" data-type="solid">Solid</button>
-                        <button class="type-btn" data-type="gradient">Gradient</button>
-                    </div>
-                </div>
-                <div id="bg-solid-wrap" class="prop-row">
-                    <div class="color-input-group">
-                        <input type="color" id="prop-bg-color" value="#ffffff">
-                        <input type="text" id="prop-bg-color-code" placeholder="#ffffff" class="color-code-input">
-                    </div>
-                    <label class="checkbox-label"><input type="checkbox" id="prop-no-bg"> No Background</label>
-                </div>
-                <div id="bg-gradient-wrap" class="prop-row" style="display:none">
-                    <input type="color" id="prop-bg-grad-1" value="#58a6ff">
-                    <input type="color" id="prop-bg-grad-2" value="#2ea043">
-                    <select id="prop-bg-grad-dir">
-                        <option value="to right">Right</option>
-                        <option value="to bottom">Bottom</option>
-                    </select>
-                </div>
-                <div class="prop-row">
-                    <label>Text Shadow</label>
-                    <input type="color" id="prop-shadow-color" value="#000000">
-                    <input type="range" id="prop-shadow-blur" min="0" max="20" value="0">
-                </div>
-                <div class="prop-row style-buttons">
-                    <button id="prop-bold" title="Bold"><b>B</b></button>
-                    <button id="prop-italic" title="Italic"><i>I</i></button>
-                    <button id="prop-underline" title="Underline"><u>U</u></button>
-                </div>
-            </div>
-            <div id="image-props" class="tab-content">
-                <div class="prop-row">
-                    <button id="btn-replace-image" class="btn btn-primary" style="width:100%">Import Image</button>
-                </div>
-                <div class="prop-row">
-                    <label>Contrast</label>
-                    <input type="range" id="prop-contrast" min="0" max="200" value="100">
-                </div>
-                <div class="prop-row">
-                    <label>Brightness</label>
-                    <input type="range" id="prop-brightness" min="0" max="200" value="100">
-                </div>
-                <div class="prop-row">
-                    <label>Hue</label>
-                    <input type="range" id="prop-hue" min="0" max="360" value="0">
-                </div>
-                <div class="prop-row">
-                    <label>Blur (Sharpness)</label>
-                    <input type="range" id="prop-blur" min="0" max="10" value="0">
-                </div>
-                <div class="prop-row">
-                    <label>Frames</label>
-                    <div class="frame-grid">
-                        <div class="frame-item active" data-frame="none">None</div>
-                        <div class="frame-item" data-frame="frame-rounded">Rounded</div>
-                        <div class="frame-item" data-frame="frame-circle">Circle</div>
-                        <div class="frame-item" data-frame="frame-border">Border</div>
-                        <div class="frame-item" data-frame="frame-shadow">Shadow</div>
-                        <div class="frame-item" data-frame="frame-art">Artistic</div>
-                        <div class="frame-item" data-frame="frame-polaroid">Polaroid</div>
-                        <div class="frame-item" data-frame="frame-neon">Neon</div>
-                    </div>
-                </div>
-            </div>
-            </div>
-            <div id="advanced-props" class="tab-content">
-                <div class="prop-row">
-                    <label>Opacity</label>
-                    <input type="range" id="prop-opacity" min="0" max="100" value="100">
-                </div>
-                <div class="prop-row">
-                    <label>Border Radius</label>
-                    <input type="range" id="prop-radius" min="0" max="50" value="0">
-                </div>
-                <div class="prop-row">
-                    <label>Margin</label>
-                    <input type="range" id="prop-margin" min="0" max="100" value="0">
-                </div>
-            </div>
-        </div>
-        <div class="panel-footer" style="display:none">
-            <button id="btn-apply-props" class="btn btn-primary" style="width:100%">Apply Changes</button>
-        </div>
+    <div class="preview-panel">
+      <div class="toolbar-bottom">
+        <select id="device-select">
+          <option value="mobile">📱 Mobile</option>
+          <option value="tablet">📟 Tablet</option>
+          <option value="desktop">🖥️ Desktop</option>
+        </select>
+        <label>Font: <input type="range" id="font-scale" min="0.5" max="2" step="0.1" value="1" /></label>
+        <label>Images: <input type="range" id="img-scale" min="0.5" max="2" step="0.1" value="1" /></label>
+      </div>
+      <div id="frame" class="frame-wrapper device-mobile">
+        <iframe id="preview-frame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"></iframe>
+      </div>
+      <p style="font-size: 0.75rem; color: #64748b; text-align: center;">Import files or paste code to get started. Inspect/Console work with local code only.</p>
     </div>
 
-    <div id="color-preview-tooltip" class="color-tooltip"></div>
-    <script src="script.js"></script>
-</body>
-</html>
+    <!-- Console Panel -->
+    <div id="console-panel" class="side-panel">
+      <div class="panel-header"><span>📟 Console Output</span> <button class="panel-btn" id="clear-console">🗑️</button> <button class="panel-btn close-panel">✖</button></div>
+      <div id="console-content" class="panel-content"></div>
+    </div>
+
+    <!-- Inspect Panel -->
+    <div id="inspect-panel" class="side-panel">
+      <div class="panel-header"><span>🖥️ DOM Inspector</span> <button class="panel-btn" id="refresh-inspect">🔄</button> <button class="panel-btn close-panel">✖</button></div>
+      <div id="inspect-content" class="panel-content"></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">✅ Operation successful</div>
+
+  
+  
+  
+  
+  
+  
+  
+
+  
+
+<script src="script.js"></script></body></html>
