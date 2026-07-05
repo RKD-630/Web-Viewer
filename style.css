@@ -61,7 +61,7 @@ body {
     flex: 1; 
     display: flex; 
     flex-direction: column; 
-    border-right: 1px solid var(--border-color); 
+    border-left: 1px solid var(--border-color); 
 }
 
 .tabs { display: flex; background: var(--panel-bg); justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
@@ -649,6 +649,6 @@ body {
         display: inline-block !important;
     }
     .editor-pane {
-        border-right: none;
+        border-left: none;
     }
 }

@@ -27,6 +27,31 @@
         </div>
     </header>
     <main class="workspace">
+        <div class="preview-pane" id="preview-pane">
+            <div class="pane-header">
+                <span>Live Preview</span>
+                <div class="device-controls">
+                    <button class="device-btn active" data-device="desktop" title="Desktop View">💻</button>
+                    <button class="device-btn" data-device="tablet" title="Tablet View">💊</button>
+                    <button class="device-btn" data-device="mobile" title="Mobile View">📱</button>
+                </div>
+            </div>
+            <div class="iframe-container" id="iframe-container">
+                <iframe id="preview-frame"></iframe>
+            </div>
+            <div class="resizer-v" id="console-resizer"></div>
+            <div class="console-pane" id="console-pane">
+                <div class="pane-header console-header">
+                    <span>Console window</span>
+                    <button id="btn-clear-console" class="btn-clear">Clear</button>
+                </div>
+                <div id="console-output" class="console-output"></div>
+                <div class="console-input-wrapper">
+                    <span class="console-prompt">&gt;</span>
+                    <input type="text" id="console-input" class="console-input" placeholder="Type JavaScript and press Enter..." spellcheck="false" autocomplete="off">
+                </div>
+            </div>
+        </div>
         <div class="editor-pane">
             <div class="tabs">
                 <div class="tab-group">
@@ -77,31 +102,6 @@ function sayHello() {
     alert("Hello World! Editor is working properly.");
 }</textarea>
             <textarea id="json-editor" class="code-area" spellcheck="false" style="display: none;"></textarea>
-        </div>
-        <div class="preview-pane" id="preview-pane">
-            <div class="pane-header">
-                <span>Live Preview</span>
-                <div class="device-controls">
-                    <button class="device-btn active" data-device="desktop" title="Desktop View">💻</button>
-                    <button class="device-btn" data-device="tablet" title="Tablet View">💊</button>
-                    <button class="device-btn" data-device="mobile" title="Mobile View">📱</button>
-                </div>
-            </div>
-            <div class="iframe-container" id="iframe-container">
-                <iframe id="preview-frame"></iframe>
-            </div>
-            <div class="resizer-v" id="console-resizer"></div>
-            <div class="console-pane" id="console-pane">
-                <div class="pane-header console-header">
-                    <span>Console window</span>
-                    <button id="btn-clear-console" class="btn-clear">Clear</button>
-                </div>
-                <div id="console-output" class="console-output"></div>
-                <div class="console-input-wrapper">
-                    <span class="console-prompt">&gt;</span>
-                    <input type="text" id="console-input" class="console-input" placeholder="Type JavaScript and press Enter..." spellcheck="false" autocomplete="off">
-                </div>
-            </div>
         </div>
     </main>
     <!-- Info Modal -->
