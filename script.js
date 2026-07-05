@@ -47,8 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (editorPane) editorPane.style.flex = '1';
                     // Reset to desktop view just in case
                     if (iframeContainer) iframeContainer.style.display = 'flex';
-                    if (consolePane) consolePane.style.display = 'flex';
-                    if (resizer) resizer.style.display = 'block';
+                    // Do not force console open, as it's now toggled manually
                 }
             } else {
                 if (targetEl) targetEl.style.display = 'block';
@@ -1553,6 +1552,26 @@ ${htmlCode}
 
     // Monitor JSON editor for manual content addition
     jsonEditor.addEventListener('input', updateTabVisibility);
+
+    // Console Toggle Logic
+    const btnConsoleToggle = document.getElementById('btn-console-toggle');
+    const mainConsolePane = document.getElementById('console-pane');
+    const mainResizer = document.getElementById('console-resizer');
+    
+    if (btnConsoleToggle && mainConsolePane && mainResizer) {
+        btnConsoleToggle.addEventListener('click', () => {
+            const isHidden = window.getComputedStyle(mainConsolePane).display === 'none';
+            if (isHidden) {
+                mainConsolePane.style.display = 'flex';
+                mainResizer.style.display = 'block';
+                btnConsoleToggle.style.backgroundColor = 'rgba(210, 168, 255, 0.15)';
+            } else {
+                mainConsolePane.style.display = 'none';
+                mainResizer.style.display = 'none';
+                btnConsoleToggle.style.backgroundColor = '';
+            }
+        });
+    }
 
     // Initial render and visibility check
     updatePreview();

@@ -32,7 +32,7 @@ body {
 }
 .logo { font-size: 18px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 8px;}
 
-.toolbar { display: flex; gap: 12px; }
+.toolbar { display: flex; gap: 12px; flex-wrap: wrap; }
 
 .btn { 
     background-color: var(--panel-bg); 
@@ -174,7 +174,7 @@ body {
 
 .console-pane { 
     height: 200px; /* Initial height */
-    display: flex; 
+    display: none; 
     flex-direction: column; 
     background: var(--bg-color); 
 }
@@ -248,6 +248,7 @@ body {
 }
 
 .resizer-v {
+    display: none;
     height: 4px;
     background: var(--border-color);
     cursor: ns-resize;
