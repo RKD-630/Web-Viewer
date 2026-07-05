@@ -995,13 +995,10 @@ ${htmlCode}
             appendConsole("Visual Edit Mode enabled. Click elements in preview to edit.", "warn");
             // Expand preview pane for full page feel
             editorPane.style.display = 'none';
-            consolePane.style.display = 'none';
-            resizerV.style.display = 'none';
         } else {
             appendConsole("Visual Edit Mode disabled.", "info");
             editorPane.style.display = 'flex';
-            consolePane.style.display = 'flex';
-            resizerV.style.display = 'flex';
+            // Do not force show console here
             propertyPanel.classList.remove('active');
             syncVisualToCode();
         }
