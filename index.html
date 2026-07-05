@@ -12,16 +12,16 @@
     <header class="navbar">
         <div class="logo">🌐 Webitor Pro™</div>
         <div class="toolbar">
-            <button id="id-btn-edit" class="btn" style="border-color: #ffca28; color: #ffca28;">Edit</button>
-            <button id="btn-save-html" class="btn" style="border-color: #2ea043; color: #2ea043;">Save HTML</button>
-            <button id="btn-mobile-template" class="btn" style="border-color: #58a6ff; color: #58a6ff;">Mobile App</button>
-            <button id="btn-new" class="btn">New </button>
+        <button id="btn-new" class="btn">New </button>
             <label for="file-import" class="btn">Import</label>
             <input type="file" id="file-import" multiple accept=".html,.css,.js" style="display: none;">
             <input type="file" id="image-import" accept="image/*" style="display: none;">
-            <button id="btn-preview" class="btn">Preview Page</button>
+            <button id="id-btn-edit" class="btn" style="border-color: #ffca28; color: #ffca28;">Edit</button>
+            <button id="btn-mobile-template" class="btn" style="border-color: #58a6ff; color: #58a6ff;">Mobile Support</button>
+            <button id="btn-preview" class="btn">Preview </button>
+            <button id="btn-save-html" class="btn" style="border-color: #2ea043; color: #2ea043;">Save HTML</button>
             <button id="btn-export-zip" class="btn btn-primary" style="background:#238636; border-color:#238636;">Save ZIP</button>
-            <button id="btn-inspect" class="btn">Inspect Element</button>
+            <button id="btn-inspect" class="btn">Inspect </button>
             <button id="btn-run" class="btn btn-primary">Run</button>
             <button id="btn-info" class="btn" title="Information">i</button>
         </div>
@@ -33,7 +33,9 @@
                     <button class="tab active" data-target="html-editor">HTML</button>
                     <button class="tab" data-target="css-editor">CSS</button>
                     <button class="tab" data-target="js-editor">JavaScript</button>
-                    <button class="tab" data-target="json-editor">JSON</button>
+                    <button class="tab mobile-tab" data-target="preview-pane" style="display: none;">Live Preview</button>
+                    <button class="tab mobile-tab" data-target="console-pane" style="display: none;">Console</button>
+                    <button class="tab" data-target="json-editor" style="display: none;">JSON</button>
                 </div>
                 <div class="editor-tools">
                     <div class="search-box">
@@ -74,22 +76,9 @@ function sayHello() {
     console.info("Button clicked! Greetings from the iframe.");
     alert("Hello World! Editor is working properly.");
 }</textarea>
-            <textarea id="json-editor" class="code-area" spellcheck="false" style="display: none;">{
-  "project": "Webitor Pro",
-  "version": "1.2.0",
-  "features": [
-    "HTML/CSS/JS Editor",
-    "Live Preview",
-    "JSON Viewer",
-    "Console Integration"
-  ],
-  "settings": {
-    "theme": "dark",
-    "fontSize": 15
-  }
-}</textarea>
+            <textarea id="json-editor" class="code-area" spellcheck="false" style="display: none;"></textarea>
         </div>
-        <div class="preview-pane">
+        <div class="preview-pane" id="preview-pane">
             <div class="pane-header">
                 <span>Live Preview</span>
                 <div class="device-controls">
@@ -206,6 +195,10 @@ function sayHello() {
     <div id="property-panel" class="property-panel">
         <div class="panel-header">
             <span id="target-element-name">Element Properties</span>
+            <div class="panel-tools">
+                <button id="btn-prop-undo" class="tool-btn" title="Undo Action">⟲</button>
+                <button id="btn-prop-redo" class="tool-btn" title="Redo Action">⟳</button>
+            </div>
             <button class="close-panel">&times;</button>
         </div>
         <div class="panel-tabs">

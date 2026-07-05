@@ -15,9 +15,44 @@ document.addEventListener('DOMContentLoaded', () => {
             tabs.forEach(t => t.classList.remove('active'));
             codeAreas.forEach(a => a.style.display = 'none');
             
+            const previewPane = document.getElementById('preview-pane');
+            const consolePane = document.getElementById('console-pane');
+            const iframeContainer = document.getElementById('iframe-container');
+            const resizer = document.getElementById('console-resizer');
+            const editorPane = document.querySelector('.editor-pane');
+            
+            if (window.innerWidth <= 768) {
+                if (previewPane) previewPane.style.display = 'none';
+            }
+            
             tab.classList.add('active');
             const targetId = tab.getAttribute('data-target');
-            document.getElementById(targetId).style.display = 'block';
+            const targetEl = document.getElementById(targetId);
+            
+            if (window.innerWidth <= 768) {
+                if (targetId === 'preview-pane') {
+                    if (previewPane) previewPane.style.display = 'flex';
+                    if (iframeContainer) iframeContainer.style.display = 'flex';
+                    if (consolePane) consolePane.style.display = 'none';
+                    if (resizer) resizer.style.display = 'none';
+                    if (editorPane) editorPane.style.flex = 'none';
+                } else if (targetId === 'console-pane') {
+                    if (previewPane) previewPane.style.display = 'flex';
+                    if (iframeContainer) iframeContainer.style.display = 'none';
+                    if (consolePane) consolePane.style.display = 'flex';
+                    if (resizer) resizer.style.display = 'none';
+                    if (editorPane) editorPane.style.flex = 'none';
+                } else {
+                    if (targetEl) targetEl.style.display = 'block';
+                    if (editorPane) editorPane.style.flex = '1';
+                    // Reset to desktop view just in case
+                    if (iframeContainer) iframeContainer.style.display = 'flex';
+                    if (consolePane) consolePane.style.display = 'flex';
+                    if (resizer) resizer.style.display = 'block';
+                }
+            } else {
+                if (targetEl) targetEl.style.display = 'block';
+            }
             
             // Refresh preview for JSON view
             updatePreview();
@@ -224,6 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (event.data.type === 'visual-editor-change') {
             // Sync back to editor
             syncVisualToCode();
+            debouncedSaveHistory();
         }
     });
 
@@ -546,11 +582,14 @@ ${htmlCode}
                     cssEditor.value += (cssEditor.value ? "\\n" : "") + text;
                 } else if(file.name.endsWith('.js')) {
                     jsEditor.value += (jsEditor.value ? "\\n" : "") + text;
+                } else if(file.name.endsWith('.json')) {
+                    jsonEditor.value = text;
                 }
                 
                 pendingFiles--;
                 if(pendingFiles === 0) {
                     updatePreview();
+                    updateTabVisibility();
                     appendConsole(`Successfully imported ${files.length} file(s).`, "info");
                 }
             };
@@ -1260,10 +1299,34 @@ ${htmlCode}
 
     function syncVisualToCode() {
         const iframeDoc = previewFrame.contentDocument || previewFrame.contentWindow.document;
-        // Clean up editor specific classes before syncing
+        // Clean up editor specific classes and artifacts before syncing
         const cleanBody = iframeDoc.body.cloneNode(true);
-        cleanBody.querySelectorAll('.editor-selected-element').forEach(el => el.classList.remove('editor-selected-element'));
+        
+        // Remove all editor-only classes
+        const editorClasses = [
+            'editor-selected-element', 
+            've-hover-preview', 
+            'editor-hover-inspect'
+        ];
+        
+        editorClasses.forEach(cls => {
+            cleanBody.querySelectorAll('.' + cls).forEach(el => el.classList.remove(cls));
+        });
+
+        // Clean up editor-specific attributes
         cleanBody.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
+        cleanBody.querySelectorAll('[data-editor-offset]').forEach(el => el.removeAttribute('data-editor-offset'));
+        
+        // Remove any style artifacts that might have been stuck
+        cleanBody.querySelectorAll('*').forEach(el => {
+            if (el.style.outline && (el.style.outline.includes('dashed') || el.style.outline.includes('#ffca28'))) {
+                el.style.outline = '';
+            }
+            // Remove empty class attributes
+            if (el.classList.length === 0) el.removeAttribute('class');
+            // Remove empty style attributes
+            if (el.getAttribute('style') === '') el.removeAttribute('style');
+        });
         
         htmlEditor.value = cleanBody.innerHTML.trim();
         triggerUpdate(); // This will refresh the internal state but keep the UI
@@ -1281,14 +1344,21 @@ ${htmlCode}
                     if (!el.id) el.id = 've-' + (++elementCounter);
                 });
 
+                const style = document.createElement('style');
+                style.innerHTML = \`
+                    .ve-hover-preview { outline: 1px dashed #ffca28 !important; }
+                    .editor-selected-element { outline: 2px solid #58a6ff !important; outline-offset: 2px !important; }
+                \`;
+                document.head.appendChild(style);
+
                 document.body.addEventListener('mouseover', function(e) {
                     if (e.target === document.body) return;
-                    e.target.style.outline = '1px dashed #ffca28';
+                    e.target.classList.add('ve-hover-preview');
                 });
 
                 document.body.addEventListener('mouseout', function(e) {
                     if (e.target === document.body) return;
-                    if (e.target !== selectedEl) e.target.style.outline = '';
+                    e.target.classList.remove('ve-hover-preview');
                 });
 
                 document.body.addEventListener('click', function(e) {
@@ -1298,7 +1368,6 @@ ${htmlCode}
 
                     if (selectedEl) {
                         selectedEl.classList.remove('editor-selected-element');
-                        selectedEl.style.outline = '';
                         selectedEl.removeAttribute('contenteditable');
                     }
 
@@ -1371,6 +1440,121 @@ ${htmlCode}
         `;
     }
 
-    // Initial render
+    // --- Visual History Management ---
+    let visualHistory = [];
+    let historyIndex = -1;
+    const MAX_HISTORY = 50;
+
+    function saveVisualHistory() {
+        const currentContent = htmlEditor.value;
+        
+        // Don't save if it's the same as the current index
+        if (historyIndex >= 0 && visualHistory[historyIndex] === currentContent) return;
+
+        // Remove any future history if we're in the middle of the stack
+        if (historyIndex < visualHistory.length - 1) {
+            visualHistory = visualHistory.slice(0, historyIndex + 1);
+        }
+
+        visualHistory.push(currentContent);
+        
+        if (visualHistory.length > MAX_HISTORY) {
+            visualHistory.shift();
+            // historyIndex remains at MAX_HISTORY - 1
+        } else {
+            historyIndex++;
+        }
+        
+        updateHistoryButtons();
+        console.log(`History saved. Index: ${historyIndex}, Total: ${visualHistory.length}`);
+    }
+
+    function updateHistoryButtons() {
+        const btnUndo = document.getElementById('btn-prop-undo');
+        const btnRedo = document.getElementById('btn-prop-redo');
+        if (!btnUndo || !btnRedo) return;
+
+        const canUndo = historyIndex > 0;
+        const canRedo = historyIndex < visualHistory.length - 1;
+
+        btnUndo.disabled = !canUndo;
+        btnRedo.disabled = !canRedo;
+        btnUndo.style.opacity = canUndo ? '1' : '0.3';
+        btnRedo.style.opacity = canRedo ? '1' : '0.3';
+        btnUndo.style.cursor = canUndo ? 'pointer' : 'not-allowed';
+        btnRedo.style.cursor = canRedo ? 'pointer' : 'not-allowed';
+    }
+
+    document.getElementById('btn-prop-undo').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (historyIndex > 0) {
+            historyIndex--;
+            applyHistoryState();
+            appendConsole("Undo: Reverted to previous visual state.", "info");
+        }
+    });
+
+    document.getElementById('btn-prop-redo').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (historyIndex < visualHistory.length - 1) {
+            historyIndex++;
+            applyHistoryState();
+            appendConsole("Redo: Re-applied visual state.", "info");
+        }
+    });
+
+    function applyHistoryState() {
+        const content = visualHistory[historyIndex];
+        htmlEditor.value = content;
+        
+        // Update the preview without triggering a new history save
+        const iframeDoc = previewFrame.contentDocument || previewFrame.contentWindow.document;
+        // We use updatePreview logic but need to be careful not to trigger saveVisualHistory again
+        // triggerUpdate uses a timeout, so we should be fine if we don't call it here
+        updatePreview();
+        updateHistoryButtons();
+    }
+
+    // Save initial state when entering edit mode
+    btnEdit.addEventListener('click', () => {
+        // Use a small delay to ensure isVisualEditMode is updated and preview is ready
+        setTimeout(() => {
+            if (isVisualEditMode && visualHistory.length === 0) {
+                saveVisualHistory();
+            }
+        }, 100);
+    });
+
+    // Save history on change (debounced)
+    let historyTimeout;
+    function debouncedSaveHistory() {
+        clearTimeout(historyTimeout);
+        historyTimeout = setTimeout(() => {
+            if (isVisualEditMode) {
+                saveVisualHistory();
+            }
+        }, 300); // Shorter debounce for better responsiveness
+    }
+
+    function updateTabVisibility() {
+        const jsonTab = document.querySelector('.tab[data-target="json-editor"]');
+        const hasJson = jsonEditor.value.trim().length > 0;
+        
+        if (hasJson) {
+            jsonTab.style.display = 'block';
+        } else {
+            // Only hide if it's not the active tab, or if we want to force hide it
+            const isActive = jsonTab.classList.contains('active');
+            if (!isActive) {
+                jsonTab.style.display = 'none';
+            }
+        }
+    }
+
+    // Monitor JSON editor for manual content addition
+    jsonEditor.addEventListener('input', updateTabVisibility);
+
+    // Initial render and visibility check
     updatePreview();
+    updateTabVisibility();
 });
