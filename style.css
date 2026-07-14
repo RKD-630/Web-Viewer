@@ -282,21 +282,22 @@
         /* Properties Panel */
         .properties-panel {
             position: fixed;
-            right: 0;
-            transform: translateX(100%);
-            top: 52px;
-            width: 30%;
-            min-width: 320px;
-            height: calc(100vh - 52px);
+            bottom: 0;
+            left: 0;
+            transform: translateY(100%);
+            width: 100%;
+            height: 30vh;
+            min-height: 250px;
             background: #16213e;
-            border-left: 2px solid #e94560;
+            border-top: 2px solid #e94560;
+            border-left: none;
             overflow-y: auto;
             transition: transform 0.3s ease;
             z-index: 100;
         }
 
         .properties-panel.active {
-            transform: translateX(0);
+            transform: translateY(0);
         }
 
         .properties-header {
@@ -675,35 +676,6 @@
                 height: 50%;
             }
             .properties-panel {
-                width: 30%;
-                min-width: unset;
-            }
-            
-            /* Adjust internal properties panel layout to fit the narrow 30% window */
-            .properties-panel .properties-section {
-                padding: 10px 5px;
-            }
-            .properties-panel .property-row {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            .properties-panel .property-row label {
-                min-width: auto;
-                margin-bottom: 5px;
-            }
-            .properties-panel .template-grid {
-                grid-template-columns: 1fr;
-            }
-            .properties-panel .align-buttons, 
-            .properties-panel .style-buttons {
-                flex-direction: column;
-            }
-            .properties-panel .align-btn, 
-            .properties-panel .style-btn,
-            .properties-panel .template-btn {
-                padding: 6px;
-                font-size: 10px;
-                margin-bottom: 5px;
-                width: 100%;
+                height: 35vh;
             }
         }
